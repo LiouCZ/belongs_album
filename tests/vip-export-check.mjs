@@ -33,6 +33,7 @@ async function run() {
   });
   try {
     await assertDesktopLayoutScalesTo65Percent(browser);
+    await assertCustomRulesPageLinkAndContent(browser);
     await assertExportUsesReadableTextareaSnapshots(browser);
     await assertRealPngDownloads(browser);
   } finally {
@@ -49,6 +50,32 @@ async function assertDesktopLayoutScalesTo65Percent(browser) {
     formWidth >= 680 && formWidth <= 700,
     `desktop form should render at about 65% of the original 1060px width, got ${formWidth}px`,
   );
+
+  await page.close();
+}
+
+async function assertCustomRulesPageLinkAndContent(browser) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  await page.goto(pageUrl);
+
+  const rulesLink = page.getByRole("link", { name: "查看定制规则" });
+  await expectVisible(rulesLink);
+  await rulesLink.click();
+  await page.waitForURL(/custom-rules\.html$/);
+
+  await expectVisible(page.getByRole("heading", { name: "VIP 定制规则", exact: true }));
+  await expectVisible(page.getByRole("heading", { name: "积分规则", exact: true }));
+  await expectVisible(page.getByRole("heading", { name: "定制规则", exact: true }));
+  await expectVisible(page.getByRole("heading", { name: "VIP 定制权益", exact: true }));
+
+  const headers = ["权益项目", "B1", "B2", "B3", "K1", "K2", "K3"];
+  for (const header of headers) {
+    assert.equal(
+      await page.getByRole("columnheader", { name: header, exact: true }).count(),
+      1,
+      `${header} column should exist`,
+    );
+  }
 
   await page.close();
 }
