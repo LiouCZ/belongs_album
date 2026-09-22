@@ -34,6 +34,7 @@ async function run() {
   try {
     await assertDesktopLayoutScalesTo65Percent(browser);
     await assertCustomRulesPageLinkAndContent(browser);
+    await assertDesktopExportCapturesWithoutCssZoom(browser);
     await assertExportUsesReadableTextareaSnapshots(browser);
     await assertRealPngDownloads(browser);
   } finally {
@@ -50,6 +51,36 @@ async function assertDesktopLayoutScalesTo65Percent(browser) {
     formWidth >= 680 && formWidth <= 700,
     `desktop form should render at about 65% of the original 1060px width, got ${formWidth}px`,
   );
+
+  await page.close();
+}
+
+async function assertDesktopExportCapturesWithoutCssZoom(browser) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1200 }, deviceScaleFactor: 2 });
+  await page.goto(pageUrl);
+  await fillVipForm(page);
+
+  const exportButton = page.getByRole("button", { name: "导出整页图片" });
+  await expectVisible(exportButton);
+
+  await page.evaluate((png) => {
+    window.html2canvas = async (target) => {
+      window.__desktopExportCheck = {
+        isExporting: document.body.classList.contains("is-exporting"),
+        zoom: getComputedStyle(target).zoom,
+        targetWidth: target.getBoundingClientRect().width,
+      };
+      return { toDataURL: () => png };
+    };
+  }, onePixelPng);
+
+  const [download] = await Promise.all([page.waitForEvent("download"), exportButton.click()]);
+  await download.cancel();
+
+  const check = await page.evaluate(() => window.__desktopExportCheck);
+  assert.equal(check.isExporting, true, "body should be in export mode while capturing");
+  assert.equal(check.zoom, "1", "desktop export should capture the form without CSS zoom to avoid doubled text");
+  assert.ok(check.targetWidth >= 1000, `desktop export target should use full readable width, got ${check.targetWidth}`);
 
   await page.close();
 }

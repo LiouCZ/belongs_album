@@ -612,6 +612,13 @@ body.is-exporting .copy-status {
   display: none;
 }
 
+@media (min-width: 761px) {
+  body.is-exporting .vip-page {
+    width: min(1060px, calc(100% - 34px));
+    zoom: 1;
+  }
+}
+
 body.is-exporting textarea.export-textarea-source {
   display: none;
 }
