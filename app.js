@@ -3,6 +3,7 @@ const state = {
   groups: [],
   filtered: [],
   query: "",
+  collection: "all",
   year: "all",
   page: 1,
   pageSize: 20,
@@ -15,6 +16,7 @@ const els = {
   visibleCount: document.querySelector("#visibleCount"),
   searchInput: document.querySelector("#searchInput"),
   pageSizeSelect: document.querySelector("#pageSizeSelect"),
+  collectionFilter: document.querySelector("#collectionFilter"),
   yearFilter: document.querySelector("#yearFilter"),
   summaryText: document.querySelector("#summaryText"),
   gallery: document.querySelector("#gallery"),
@@ -45,7 +47,7 @@ function groupText(value) {
 }
 
 function groupKey(item) {
-  return [item.date, item.title, item.caption].map(groupText).join("|");
+  return [item.collection, item.date, item.title, item.caption].map(groupText).join("|");
 }
 
 function createGroups(items) {
@@ -57,6 +59,7 @@ function createGroups(items) {
       groups.set(key, {
         id: `group-${groups.size + 1}-${item.id}`,
         key,
+        collection: item.collection || "未分类",
         year: item.year,
         date: item.date,
         title: item.title,
@@ -83,7 +86,7 @@ function searchableText(group) {
   const itemText = group.items
     .map((item) => [item.year, item.date, item.title, item.caption, item.index, item.sourceIndex].join(" "))
     .join(" ");
-  return normalize([group.year, group.date, group.title, group.caption, group.imageCount, itemText].join(" "));
+  return normalize([group.collection, group.year, group.date, group.title, group.caption, group.imageCount, itemText].join(" "));
 }
 
 function escapeHtml(value) {
@@ -107,6 +110,17 @@ function renderYearFilter(years) {
     .map((year) => {
       const label = year === "all" ? "全部" : year;
       return `<button class="chip ${year === state.year ? "is-active" : ""}" type="button" data-year="${year}">${label}</button>`;
+    })
+    .join("");
+}
+
+function renderCollectionFilter(collections) {
+  if (!els.collectionFilter) return;
+  const options = ["all", ...collections];
+  els.collectionFilter.innerHTML = options
+    .map((collection) => {
+      const label = collection === "all" ? "全部合集" : collection;
+      return `<button class="chip ${collection === state.collection ? "is-active" : ""}" type="button" data-collection="${escapeHtml(collection)}">${escapeHtml(label)}</button>`;
     })
     .join("");
 }
@@ -152,9 +166,10 @@ function renderPagination() {
 function applyFilters() {
   const query = normalize(state.query);
   state.filtered = state.groups.filter((item) => {
+    const collectionMatches = state.collection === "all" || item.collection === state.collection;
     const yearMatches = state.year === "all" || item.years.includes(state.year);
     const queryMatches = !query || searchableText(item).includes(query);
-    return yearMatches && queryMatches;
+    return collectionMatches && yearMatches && queryMatches;
   });
   state.page = Math.min(Math.max(1, state.page), totalPages());
 
@@ -162,16 +177,19 @@ function applyFilters() {
   els.totalCount.textContent = state.groups.length;
   els.summaryText.textContent = buildSummary();
   els.emptyState.hidden = state.filtered.length > 0;
+  renderCollectionFilter([...new Set(state.items.map((item) => item.collection || "未分类"))].sort());
   renderYearFilter([...new Set(state.items.map((item) => item.year))].sort());
   renderPagination();
   renderCards(pageItems());
 }
 
 function buildSummary() {
+  const collectionLabel = els.collectionFilter ? (state.collection === "all" ? "全部合集" : state.collection) : "";
   const yearLabel = state.year === "all" ? "全部年份" : `${state.year} 年`;
   const queryLabel = state.query ? `，关键词「${state.query}」` : "";
   const imageCount = state.filtered.reduce((total, group) => total + group.imageCount, 0);
-  return `${yearLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
+  const scopeLabel = collectionLabel ? `${collectionLabel} · ` : "";
+  return `${scopeLabel}${yearLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
 }
 
 function sourceRange(group) {
@@ -230,6 +248,16 @@ function bindEvents() {
     state.page = 1;
     applyFilters();
   });
+
+  if (els.collectionFilter) {
+    els.collectionFilter.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-collection]");
+      if (!button) return;
+      state.collection = button.dataset.collection;
+      state.page = 1;
+      applyFilters();
+    });
+  }
 
   els.yearFilter.addEventListener("click", (event) => {
     const button = event.target.closest("[data-year]");

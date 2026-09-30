@@ -44,6 +44,7 @@ window.BELONGS_DATA = {
   generatedAt: "2026-09-30",
   source: "player-share-wings",
   count: WING_ITEMS.length,
+  collections: ["羽翼合集"],
   years: ["未标注"],
   items: WING_ITEMS.map(([index, sourceIndex, file, width, height, caption = ""]) => {
     const number = String(index).padStart(2, "0");
@@ -52,17 +53,18 @@ window.BELONGS_DATA = {
       year: "未标注",
       index,
       sourceIndex,
+      collection: "羽翼合集",
       date: "羽翼系列",
       title: `羽翼 #${number}`,
       caption,
       image: `assets/player-images/wings/${file}`,
       thumb: `assets/player-thumbs/wings/${file}`,
-      width,
-      height,
-      largeWidth: width,
-      largeHeight: height,
+      width: 1200,
+      height: 900,
+      largeWidth: 1200,
+      largeHeight: 900,
       thumbWidth: 360,
-      thumbHeight: Math.round((height / width) * 360),
+      thumbHeight: 270,
     };
   }),
 };

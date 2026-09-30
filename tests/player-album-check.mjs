@@ -60,11 +60,31 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
   await expectVisible(page.getByRole("link", { name: "官方画册" }), "official album nav link should be visible");
   await expectVisible(page.getByRole("link", { name: "玩家分享" }), "player album nav link should be visible");
   await expectVisible(page.getByRole("searchbox"), "search input should remain available");
+  await expectVisible(page.getByRole("button", { name: "羽翼合集" }), "wing collection filter should be visible");
+  assert.equal(await page.locator("#collectionFilter .chip").count(), 2);
   assert.equal(await page.locator("#totalCount").textContent(), "30");
   assert.equal(await page.locator("#visibleCount").textContent(), "30");
   assert.match(await page.locator("#summaryText").textContent(), /找到 30 组图文，39 张图片/);
   assert.equal(await page.locator("#emptyState").isHidden(), true);
   assert.equal(await page.locator(".card").count(), 20);
+  const thumbBox = await page.locator(".thumb").first().boundingBox();
+  assert.ok(Math.abs(thumbBox.width / thumbBox.height - 4 / 3) < 0.02, "gallery image frame should use a 4:3 ratio");
+
+  const dimensions = await page.evaluate(() => window.BELONGS_DATA.items.map((item) => [item.width, item.height, item.thumbWidth, item.thumbHeight]));
+  assert.equal(dimensions.every(([width, height, thumbWidth, thumbHeight]) => width === 1200 && height === 900 && thumbWidth === 360 && thumbHeight === 270), true);
+  const loadedDimensions = await page.evaluate(async () => {
+    return Promise.all(window.BELONGS_DATA.items.map((item) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve([image.naturalWidth, image.naturalHeight]);
+      image.onerror = () => resolve([0, 0]);
+      image.src = item.image;
+    })));
+  });
+  assert.equal(loadedDimensions.every(([width, height]) => width === 1200 && height === 900), true);
+
+  await page.getByRole("button", { name: "羽翼合集" }).click();
+  assert.equal(await page.locator("#visibleCount").textContent(), "30");
+  assert.match(await page.locator("#summaryText").textContent(), /羽翼合集/);
 
   await page.getByRole("searchbox").fill("羽翼 #21");
   assert.equal(await page.locator("#visibleCount").textContent(), "1");

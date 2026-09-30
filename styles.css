@@ -185,6 +185,19 @@ main {
   gap: 8px;
 }
 
+.filters {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.collection-filter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .chip {
   min-height: 40px;
   border: 1px solid rgba(13, 15, 16, 0.24);
@@ -273,7 +286,7 @@ main {
 .thumb {
   position: relative;
   display: grid;
-  height: 260px;
+  aspect-ratio: 4 / 3;
   place-items: center;
   background: var(--paper-2);
   overflow: hidden;
@@ -283,7 +296,6 @@ main {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 12px;
 }
 
 .image-count {
@@ -494,6 +506,12 @@ main {
     justify-content: flex-start;
   }
 
+  .filters,
+  .collection-filter {
+    justify-items: start;
+    justify-content: flex-start;
+  }
+
   .pagination {
     justify-content: space-between;
   }
@@ -508,7 +526,7 @@ main {
   }
 
   .thumb {
-    height: 260px;
+    aspect-ratio: 4 / 3;
   }
 
   .detail-grid {
