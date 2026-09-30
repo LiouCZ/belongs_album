@@ -61,6 +61,7 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
   await expectVisible(page.getByRole("link", { name: "玩家分享" }), "player album nav link should be visible");
   await expectVisible(page.getByRole("searchbox"), "search input should remain available");
   await expectVisible(page.getByRole("button", { name: "羽翼合集" }), "wing collection filter should be visible");
+  assert.deepEqual(await page.locator(".filter-label").allTextContents(), ["合集", "年份"]);
   assert.equal(await page.locator("#collectionFilter .chip").count(), 2);
   assert.equal(await page.locator("#totalCount").textContent(), "30");
   assert.equal(await page.locator("#visibleCount").textContent(), "30");

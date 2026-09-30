@@ -188,7 +188,19 @@ main {
 .filters {
   display: grid;
   gap: 8px;
-  justify-items: end;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.filter-label {
+  color: var(--header-muted);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .collection-filter {
@@ -506,9 +518,8 @@ main {
     justify-content: flex-start;
   }
 
-  .filters,
+  .filter-row,
   .collection-filter {
-    justify-items: start;
     justify-content: flex-start;
   }
 
