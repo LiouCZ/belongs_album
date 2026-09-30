@@ -28,7 +28,7 @@ async function run() {
 
   try {
     await assertHomeLinksToPlayerAlbum(browser);
-    await assertPlayerAlbumRendersEmptyGallery(browser);
+    await assertPlayerAlbumRendersWingGallery(browser);
   } finally {
     await browser.close();
   }
@@ -50,7 +50,7 @@ async function assertHomeLinksToPlayerAlbum(browser) {
   await page.close();
 }
 
-async function assertPlayerAlbumRendersEmptyGallery(browser) {
+async function assertPlayerAlbumRendersWingGallery(browser) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = await collectPageErrors(page);
 
@@ -60,10 +60,23 @@ async function assertPlayerAlbumRendersEmptyGallery(browser) {
   await expectVisible(page.getByRole("link", { name: "官方画册" }), "official album nav link should be visible");
   await expectVisible(page.getByRole("link", { name: "玩家分享" }), "player album nav link should be visible");
   await expectVisible(page.getByRole("searchbox"), "search input should remain available");
-  assert.equal(await page.locator("#totalCount").textContent(), "0");
-  assert.equal(await page.locator("#visibleCount").textContent(), "0");
-  assert.match(await page.locator("#summaryText").textContent(), /找到 0 组图文，0 张图片/);
-  assert.equal(await page.locator("#emptyState h2").textContent(), "暂无玩家分享图文");
+  assert.equal(await page.locator("#totalCount").textContent(), "30");
+  assert.equal(await page.locator("#visibleCount").textContent(), "30");
+  assert.match(await page.locator("#summaryText").textContent(), /找到 30 组图文，39 张图片/);
+  assert.equal(await page.locator("#emptyState").isHidden(), true);
+  assert.equal(await page.locator(".card").count(), 20);
+
+  await page.getByRole("searchbox").fill("羽翼 #21");
+  assert.equal(await page.locator("#visibleCount").textContent(), "1");
+  assert.equal(await page.locator(".card").count(), 1);
+  assert.equal(await page.locator(".image-count").textContent(), "2 张");
+
+  await page.locator(".card").click();
+  await expectVisible(page.locator("#carouselControls"), "wing 21 carousel should be visible");
+  assert.equal(await page.locator("#carouselCount").textContent(), "1 / 2");
+  await page.locator("#nextImage").click();
+  assert.equal(await page.locator("#carouselCount").textContent(), "2 / 2");
+  await page.locator("#closeDialog").click();
   assert.deepEqual(errors, []);
 
   await page.close();
