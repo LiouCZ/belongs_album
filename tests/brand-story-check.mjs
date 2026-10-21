@@ -17,6 +17,7 @@ const expected = [
   ["DENHAM FRIENDS | 探访BELONGS Part 2", "69eb17ca000000001e00c1d0"],
   ["DENHAM FRIENDS | 探访BELONGS Part 3", "69eb1842000000002003aa3c"],
 ];
+const themes = ["手作与原创", "自然与复古美学", "形与象征", "时间与情感"];
 
 async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
@@ -28,10 +29,28 @@ async function run() {
       await page.close();
     }
 
-    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 720 }]) {
       const page = await browser.newPage({ viewport });
       await page.goto(`file://${path.join(root, "brand-story.html")}`);
       assert.equal(await page.locator("h1").textContent(), "品牌故事");
+      const philosophy = page.getByRole("region", { name: "创作理念" });
+      assert.equal(await philosophy.locator(".philosophy-chapter").count(), themes.length);
+      for (const [index, theme] of themes.entries()) {
+        const chapter = philosophy.locator(".philosophy-chapter").nth(index);
+        assert.equal(await chapter.locator("h3").textContent(), theme);
+        assert.match(await chapter.locator("figcaption").textContent(), /官方画册/);
+        await chapter.locator("img").scrollIntoViewIfNeeded();
+        const imageBox = await chapter.locator("img").boundingBox();
+        assert.ok(Math.abs(imageBox.width / imageBox.height - 1.5) < 0.02);
+        assert.equal(await chapter.locator("img").evaluate(async (image) => {
+          await image.decode();
+          return image.naturalWidth > 0 && image.naturalWidth / image.naturalHeight >= 1.2;
+        }), true);
+      }
+      const perspective = page.getByRole("region", { name: "个人视角" });
+      assert.match(await perspective.textContent(), /非品牌官方原文/);
+      assert.match(await perspective.textContent(), /留白不是“什么都没有”/);
+      assert.equal(await page.locator(".philosophy-section ~ .story-list").count(), 1);
       const cards = page.locator(".story-card");
       assert.equal(await cards.count(), expected.length);
       for (let index = 0; index < expected.length; index += 1) {
@@ -41,6 +60,7 @@ async function run() {
         assert.match(await card.getAttribute("href"), new RegExp(id));
         assert.equal(await card.getAttribute("target"), "_blank");
         assert.equal(await card.getAttribute("rel"), "noopener noreferrer");
+        await card.locator("img").scrollIntoViewIfNeeded();
         assert.equal(await card.locator("img").evaluate(async (image) => {
           await image.decode();
           return image.naturalWidth > 0;
