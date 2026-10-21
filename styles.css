@@ -370,6 +370,60 @@ main {
   color: var(--muted);
 }
 
+.intro-dialog {
+  width: min(560px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  border: 1px solid rgba(244, 241, 234, 0.36);
+  background: #252a2b;
+  color: var(--header-text);
+  padding: 10px 10px 0;
+  box-shadow: 0 28px 72px rgba(13, 15, 16, 0.48);
+}
+
+.intro-dialog::backdrop {
+  background: rgba(13, 15, 16, 0.76);
+}
+
+.intro-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 100px);
+  object-fit: contain;
+  background: #252a2b;
+}
+
+.intro-toolbar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+  align-items: center;
+  min-height: 58px;
+  gap: 8px;
+}
+
+.intro-toolbar button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--header-text);
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.intro-toolbar button:hover,
+.intro-toolbar button:focus-visible {
+  background: rgba(244, 241, 234, 0.15);
+  outline: 1px solid var(--header-text);
+}
+
+.intro-toolbar span {
+  color: var(--header-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
 .detail {
   width: min(1220px, calc(100vw - 36px));
   max-height: min(900px, calc(100vh - 36px));
