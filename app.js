@@ -9,6 +9,7 @@ const state = {
   pageSize: 20,
   activeGroup: null,
   activeImageIndex: 0,
+  lastDiscoveryId: null,
 };
 
 const els = {
@@ -36,6 +37,10 @@ const els = {
   detailTitle: document.querySelector("#detailTitle"),
   detailIndex: document.querySelector("#detailIndex"),
   detailCaption: document.querySelector("#detailCaption"),
+  discovery: document.querySelector(".discovery-strip"),
+  dailyPick: document.querySelector("#dailyPick"),
+  timeTrace: document.querySelector("#timeTrace"),
+  timeTraceLabel: document.querySelector("#timeTraceLabel"),
 };
 
 function normalize(value) {
@@ -145,6 +150,57 @@ function renderCards(items) {
     .join("");
 }
 
+function datedGroup(group) {
+  const match = String(group.date || "").match(/(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/);
+  if (!match) return null;
+  const [, year, month, day] = match.map(Number);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { group, year, month, day, key: year * 10000 + month * 100 + day };
+}
+
+function renderDiscovery() {
+  if (!els.discovery) return;
+  const now = new Date();
+  const todayKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  const dated = state.groups.map(datedGroup).filter(Boolean);
+  const eligible = dated.filter((entry) => entry.key <= todayKey);
+  const dailyPool = eligible.length ? eligible : dated;
+  if (!dailyPool.length) {
+    els.discovery.hidden = true;
+    return;
+  }
+
+  const freshPool = dailyPool.filter((entry) => entry.group.id !== state.lastDiscoveryId);
+  const selectable = freshPool.length ? freshPool : dailyPool;
+  const daily = selectable[Math.floor(Math.random() * selectable.length)].group;
+  state.lastDiscoveryId = daily.id;
+  els.dailyPick.dataset.discoveryId = daily.id;
+  els.dailyPick.setAttribute("aria-label", `查看今日一件：${daily.title}`);
+  els.dailyPick.innerHTML = `<img src="${escapeHtml(daily.thumb)}" alt="" width="${daily.thumbWidth}" height="${daily.thumbHeight}" /><span><strong>${escapeHtml(daily.title)}</strong><small>${escapeHtml(daily.date)}</small></span>`;
+
+  const past = dated.filter((entry) => entry.year < now.getFullYear());
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const exact = past.filter((entry) => entry.month === month && entry.day === day);
+  const sameMonth = past.filter((entry) => entry.month === month);
+  const tracePool = [...(exact.length ? exact : sameMonth.length ? sameMonth : past)];
+  for (let index = tracePool.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [tracePool[index], tracePool[randomIndex]] = [tracePool[randomIndex], tracePool[index]];
+  }
+  const trace = tracePool.slice(0, 3);
+  const monthNames = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
+  els.timeTraceLabel.textContent = exact.length
+    ? `往年今日 · ${month}月${day}日`
+    : sameMonth.length ? `${monthNames[month - 1]}月旧作` : "往年作品";
+  els.timeTrace.innerHTML = trace.map(({ group }) => `
+    <button type="button" class="discovery-trace-item" data-discovery-id="${escapeHtml(group.id)}" title="查看${escapeHtml(group.title)}" aria-label="查看${escapeHtml(group.title)}">
+      <img src="${escapeHtml(group.thumb)}" alt="" width="${group.thumbWidth}" height="${group.thumbHeight}" />
+      <span><strong>${escapeHtml(group.title)}</strong><small>${escapeHtml(group.date)}</small></span>
+    </button>
+  `).join("");
+}
+
 function totalPages() {
   return Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
 }
@@ -237,6 +293,19 @@ function closeDetail() {
 }
 
 function bindEvents() {
+  if (els.discovery) {
+    els.discovery.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-discovery-id]");
+      if (!button) return;
+      const group = state.groups.find((candidate) => candidate.id === button.dataset.discoveryId);
+      if (group) {
+        document.querySelector("#siteEggDialog")?.close();
+        openDetail(group);
+      }
+    });
+    window.addEventListener("belongs:refresh-discovery", renderDiscovery);
+  }
+
   els.searchInput.addEventListener("input", (event) => {
     state.query = event.target.value;
     state.page = 1;
@@ -314,6 +383,12 @@ async function init() {
   state.items = data.items || [];
   state.groups = createGroups(state.items);
   state.filtered = state.items;
+  const query = new URLSearchParams(window.location.search).get("q");
+  if (query) {
+    state.query = query;
+    els.searchInput.value = query;
+  }
+  renderDiscovery();
   applyFilters();
 }
 

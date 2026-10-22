@@ -16,6 +16,7 @@
         <div>
           <h1>Belongs 公众号画册</h1>
           <p>2021-2026 公众号合集</p>
+          <p class="brand-public-info"><span>小红书号：BELONGS</span><span>微信公众号：BELONGS OFFICIAL</span></p>
         </div>
       </div>
       <div class="top-actions">
@@ -62,6 +63,17 @@
           </select>
         </label>
         <div class="year-filter" id="yearFilter" aria-label="年份筛选"></div>
+      </section>
+
+      <section class="discovery-strip" aria-label="画册发现" hidden>
+        <div class="discovery-daily">
+          <span class="discovery-label">今日一件</span>
+          <button type="button" id="dailyPick" class="discovery-pick" title="查看今日作品"></button>
+        </div>
+        <div class="discovery-time">
+          <span class="discovery-label" id="timeTraceLabel">时间刻痕</span>
+          <div class="discovery-trace" id="timeTrace"></div>
+        </div>
       </section>
 
       <section class="summary" id="summaryText">正在加载图文数据...</section>
@@ -113,5 +125,6 @@
     <script src="data/items.js"></script>
     <script src="app.js"></script>
     <script src="intro.js"></script>
+    <script src="site-stamp.js"></script>
   </body>
 </html>
