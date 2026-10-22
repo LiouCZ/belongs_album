@@ -101,7 +101,43 @@
         </section>
       </section>
 
-      <div class="story-heading">
+      <section class="story-editorials" aria-label="重点专题">
+        <div class="story-heading">
+          <div>
+            <p class="story-eyebrow">专题 / 从官方图文提炼</p>
+            <h2 class="story-subtitle">八条值得细读的创作线索</h2>
+          </div>
+          <span class="story-count">编辑整理 · 原文见下方目录</span>
+        </div>
+        <div class="story-feature-list" id="storyFeatureList"></div>
+      </section>
+
+      <section class="story-catalog-section" id="story-catalog" aria-label="文章目录">
+        <div class="story-heading">
+          <div>
+            <p class="story-eyebrow">文字档案 / 2021—2026</p>
+            <h2 class="story-subtitle">全部文章与作品线索</h2>
+          </div>
+          <span class="story-count" id="storyResultCount" aria-live="polite"></span>
+        </div>
+        <p class="story-catalog-note">依据官方公众号图文整理。摘要为编辑提炼，引号内为原文短句；2024—2026 年条目是作品主题线索，不作为独立官方长文。</p>
+        <div class="story-catalog-controls">
+          <div class="story-year-filter" id="storyYearFilter" aria-label="年份筛选"></div>
+          <label class="story-search-label">
+            <span class="visually-hidden">搜索文章</span>
+            <input id="storySearch" type="search" placeholder="搜索篇名、主题或原文" autocomplete="off" />
+          </label>
+        </div>
+        <div class="story-catalog" id="storyCatalog"></div>
+        <p class="story-empty" id="storyEmpty" hidden>没有找到相关内容。</p>
+        <nav class="story-pagination" aria-label="文章目录分页">
+          <button id="storyPrevPage" type="button">上一页</button>
+          <span id="storyPageInfo" aria-live="polite"></span>
+          <button id="storyNextPage" type="button">下一页</button>
+        </nav>
+      </section>
+
+      <div class="story-heading story-video-heading">
         <div>
           <p class="story-eyebrow">影像记录 / DENHAM x BELONGS</p>
           <p class="story-subtitle">合作上线与主理人探访</p>
@@ -156,5 +192,18 @@
         </a>
       </section>
     </main>
+    <dialog class="story-source-dialog" id="storySourceDialog" aria-label="官方图文原文">
+      <div class="story-source-header">
+        <div>
+          <p class="story-eyebrow">官方图文 / 原始文字</p>
+          <h2 id="storySourceTitle"></h2>
+        </div>
+        <button id="storySourceClose" type="button" aria-label="关闭" title="关闭">×</button>
+      </div>
+      <p class="story-source-note" id="storySourceNote"></p>
+      <div class="story-source-body" id="storySourceBody"></div>
+    </dialog>
+    <script src="data/story-catalog.js"></script>
+    <script src="brand-story.js"></script>
   </body>
 </html>
