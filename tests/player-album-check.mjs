@@ -60,14 +60,20 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
   await expectVisible(page.getByRole("link", { name: "官方画册" }), "official album nav link should be visible");
   await expectVisible(page.getByRole("link", { name: "玩家分享" }), "player album nav link should be visible");
   await expectVisible(page.getByRole("searchbox"), "search input should remain available");
+  await expectVisible(page.locator("#collectionSpotlight"), "collection overview should be visible");
+  assert.equal(await page.locator("#collectionTitle").textContent(), "羽翼合集");
+  assert.equal(await page.locator("#collectionCount").textContent(), "30 组作品 · 39 张图片");
   await expectVisible(page.getByRole("button", { name: "羽翼合集" }), "wing collection filter should be visible");
-  assert.deepEqual(await page.locator(".filter-label").allTextContents(), ["合集", "年份"]);
-  assert.equal(await page.locator("#collectionFilter .chip").count(), 2);
+  assert.equal(await page.locator("#collectionFilter .chip").count(), 1);
+  assert.equal(await page.locator("#collectionFilter .chip").getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("#yearFilter").count(), 0);
   assert.equal(await page.locator("#totalCount").textContent(), "30");
   assert.equal(await page.locator("#visibleCount").textContent(), "30");
   assert.match(await page.locator("#summaryText").textContent(), /找到 30 组图文，39 张图片/);
+  assert.doesNotMatch(await page.locator("#summaryText").textContent(), /未标注/);
   assert.equal(await page.locator("#emptyState").isHidden(), true);
-  assert.equal(await page.locator(".card").count(), 20);
+  assert.equal(await page.locator(".player-card").count(), 20);
+  assert.equal(await page.locator(".player-card .excerpt").count(), 0);
   const thumbBox = await page.locator(".thumb").first().boundingBox();
   assert.ok(Math.abs(thumbBox.width / thumbBox.height - 4 / 3) < 0.02, "gallery image frame should use a 4:3 ratio");
 
@@ -83,16 +89,17 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
   });
   assert.equal(loadedDimensions.every(([width, height]) => width === 1200 && height === 900), true);
 
-  await page.getByRole("button", { name: "羽翼合集" }).click();
-  assert.equal(await page.locator("#visibleCount").textContent(), "30");
-  assert.match(await page.locator("#summaryText").textContent(), /羽翼合集/);
+  await page.locator(".player-card").first().click();
+  assert.equal(await page.locator("#detailMeta").textContent(), "羽翼合集");
+  assert.equal(await page.locator("#detailCaption").isHidden(), true);
+  await page.locator("#closeDialog").click();
 
   await page.getByRole("searchbox").fill("羽翼 #21");
   assert.equal(await page.locator("#visibleCount").textContent(), "1");
-  assert.equal(await page.locator(".card").count(), 1);
+  assert.equal(await page.locator(".player-card").count(), 1);
   assert.equal(await page.locator(".image-count").textContent(), "2 张");
 
-  await page.locator(".card").click();
+  await page.locator(".player-card").click();
   await expectVisible(page.locator("#carouselControls"), "wing 21 carousel should be visible");
   assert.equal(await page.locator("#carouselCount").textContent(), "1 / 2");
   await page.locator("#nextImage").click();

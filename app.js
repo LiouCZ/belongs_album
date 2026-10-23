@@ -10,6 +10,7 @@ const state = {
   activeGroup: null,
   activeImageIndex: 0,
   lastDiscoveryId: null,
+  view: "grid",
 };
 
 const els = {
@@ -19,8 +20,15 @@ const els = {
   pageSizeSelect: document.querySelector("#pageSizeSelect"),
   collectionFilter: document.querySelector("#collectionFilter"),
   yearFilter: document.querySelector("#yearFilter"),
+  playerAlbum: document.querySelector("#playerAlbum"),
+  collectionSpotlight: document.querySelector("#collectionSpotlight"),
+  collectionCover: document.querySelector("#collectionCover"),
+  collectionTitle: document.querySelector("#collectionTitle"),
+  collectionCount: document.querySelector("#collectionCount"),
   summaryText: document.querySelector("#summaryText"),
   gallery: document.querySelector("#gallery"),
+  albumMain: document.querySelector("#albumMain"),
+  viewSwitch: document.querySelector("#viewSwitch"),
   pagination: document.querySelector("#pagination"),
   prevPage: document.querySelector("#prevPage"),
   nextPage: document.querySelector("#nextPage"),
@@ -110,6 +118,7 @@ function excerpt(text, maxLength = 110) {
 }
 
 function renderYearFilter(years) {
+  if (!els.yearFilter) return;
   const options = ["all", ...years];
   els.yearFilter.innerHTML = options
     .map((year) => {
@@ -121,16 +130,60 @@ function renderYearFilter(years) {
 
 function renderCollectionFilter(collections) {
   if (!els.collectionFilter) return;
-  const options = ["all", ...collections];
+  const options = collections.length > 1 ? ["all", ...collections] : collections;
   els.collectionFilter.innerHTML = options
     .map((collection) => {
       const label = collection === "all" ? "全部合集" : collection;
-      return `<button class="chip ${collection === state.collection ? "is-active" : ""}" type="button" data-collection="${escapeHtml(collection)}">${escapeHtml(label)}</button>`;
+      return `<button class="chip ${collection === state.collection ? "is-active" : ""}" type="button" data-collection="${escapeHtml(collection)}" aria-pressed="${collection === state.collection}">${escapeHtml(label)}</button>`;
     })
     .join("");
 }
 
+function renderCollectionSpotlight() {
+  if (!els.collectionSpotlight) return;
+  const groups = state.groups.filter((group) => state.collection === "all" || group.collection === state.collection);
+  const cover = groups[0];
+  els.collectionSpotlight.hidden = !cover;
+  if (!cover) return;
+  els.collectionCover.src = cover.thumb;
+  els.collectionTitle.textContent = state.collection === "all" ? "玩家分享合集" : state.collection;
+  const imageCount = groups.reduce((total, group) => total + group.imageCount, 0);
+  els.collectionCount.textContent = `${groups.length} 组作品 · ${imageCount} 张图片`;
+}
+
 function renderCards(items) {
+  if (els.playerAlbum) {
+    els.gallery.innerHTML = items.map((item) => `
+      <article class="card player-card" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
+        <div class="thumb">
+          <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
+          ${item.imageCount > 1 ? `<span class="image-count">${item.imageCount} 张</span>` : ""}
+        </div>
+        <div class="card-body">
+          <h3>${escapeHtml(item.title)}</h3>
+          ${item.caption ? `<p class="excerpt">${escapeHtml(excerpt(item.caption))}</p>` : ""}
+        </div>
+      </article>
+    `).join("");
+    return;
+  }
+  if (els.viewSwitch && state.view === "list") {
+    els.gallery.innerHTML = items.map((item) => `
+      <article class="card card-list" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
+        <div class="thumb"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" /></div>
+        <div class="card-body">
+          <p class="meta">${escapeHtml(item.date)}</p>
+          <div class="list-details">
+            <span class="list-count">${escapeHtml(item.year)} · ${item.imageCount} 张</span>
+            <h3>${escapeHtml(item.title)}</h3>
+            <p class="excerpt">${escapeHtml(excerpt(item.caption))}</p>
+          </div>
+          <svg class="list-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+        </div>
+      </article>
+    `).join("");
+    return;
+  }
   els.gallery.innerHTML = items
     .map(
       (item) => `
@@ -148,6 +201,28 @@ function renderCards(items) {
       `
     )
     .join("");
+}
+
+function setView(view, updateUrl = false) {
+  if (!els.viewSwitch) return;
+  const nextView = view === "list" ? "list" : "grid";
+  if (updateUrl && nextView === state.view) return;
+  state.view = nextView;
+  els.albumMain.classList.toggle("is-list-view", nextView === "list");
+  document.body.classList.toggle("view-list-page", nextView === "list");
+  els.searchInput.placeholder = nextView === "list"
+    ? "搜索标题、日期或内容"
+    : "输入标题、日期、年份、材质、关键词...";
+  for (const button of els.viewSwitch.querySelectorAll("[data-view]")) {
+    button.setAttribute("aria-pressed", String(button.dataset.view === nextView));
+  }
+  if (updateUrl) {
+    const url = new URL(window.location.href);
+    if (nextView === "list") url.searchParams.set("view", "list");
+    else url.searchParams.delete("view");
+    window.history.pushState(null, "", url);
+  }
+  renderCards(pageItems());
 }
 
 function datedGroup(group) {
@@ -234,6 +309,7 @@ function applyFilters() {
   els.summaryText.textContent = buildSummary();
   els.emptyState.hidden = state.filtered.length > 0;
   renderCollectionFilter([...new Set(state.items.map((item) => item.collection || "未分类"))].sort());
+  renderCollectionSpotlight();
   renderYearFilter([...new Set(state.items.map((item) => item.year))].sort());
   renderPagination();
   renderCards(pageItems());
@@ -241,9 +317,12 @@ function applyFilters() {
 
 function buildSummary() {
   const collectionLabel = els.collectionFilter ? (state.collection === "all" ? "全部合集" : state.collection) : "";
-  const yearLabel = state.year === "all" ? "全部年份" : `${state.year} 年`;
   const queryLabel = state.query ? `，关键词「${state.query}」` : "";
   const imageCount = state.filtered.reduce((total, group) => total + group.imageCount, 0);
+  if (els.playerAlbum) {
+    return `${collectionLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
+  }
+  const yearLabel = state.year === "all" ? "全部年份" : `${state.year} 年`;
   const scopeLabel = collectionLabel ? `${collectionLabel} · ` : "";
   return `${scopeLabel}${yearLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
 }
@@ -274,10 +353,18 @@ function openDetail(group) {
   state.activeGroup = group;
   state.activeImageIndex = 0;
   renderDetailImage();
-  els.detailMeta.textContent = `${group.date} · ${group.year}`;
   els.detailTitle.textContent = group.title;
-  els.detailIndex.textContent = `${group.year} 第 ${String(group.index).padStart(3, "0")} 组 · ${group.imageCount} 张图片 · 全集 Item ${sourceRange(group)}`;
-  els.detailCaption.textContent = group.caption || "无文字说明";
+  if (els.playerAlbum) {
+    els.detailMeta.textContent = group.collection;
+    els.detailIndex.textContent = `第 ${String(group.index).padStart(2, "0")} 组 · ${group.imageCount} 张图片`;
+    els.detailCaption.textContent = group.caption;
+    els.detailCaption.hidden = !group.caption;
+  } else {
+    els.detailMeta.textContent = `${group.date} · ${group.year}`;
+    els.detailIndex.textContent = `${group.year} 第 ${String(group.index).padStart(3, "0")} 组 · ${group.imageCount} 张图片 · 全集 Item ${sourceRange(group)}`;
+    els.detailCaption.textContent = group.caption || "无文字说明";
+    els.detailCaption.hidden = false;
+  }
   if (typeof els.dialog.showModal === "function") {
     els.dialog.showModal();
   } else {
@@ -293,6 +380,16 @@ function closeDetail() {
 }
 
 function bindEvents() {
+  if (els.viewSwitch) {
+    els.viewSwitch.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-view]");
+      if (button) setView(button.dataset.view, true);
+    });
+    window.addEventListener("popstate", () => {
+      setView(new URLSearchParams(window.location.search).get("view"));
+    });
+  }
+
   if (els.discovery) {
     els.discovery.addEventListener("click", (event) => {
       const button = event.target.closest("[data-discovery-id]");
@@ -328,13 +425,15 @@ function bindEvents() {
     });
   }
 
-  els.yearFilter.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-year]");
-    if (!button) return;
-    state.year = button.dataset.year;
-    state.page = 1;
-    applyFilters();
-  });
+  if (els.yearFilter) {
+    els.yearFilter.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-year]");
+      if (!button) return;
+      state.year = button.dataset.year;
+      state.page = 1;
+      applyFilters();
+    });
+  }
 
   els.prevPage.addEventListener("click", () => {
     state.page = Math.max(1, state.page - 1);
@@ -383,11 +482,14 @@ async function init() {
   state.items = data.items || [];
   state.groups = createGroups(state.items);
   state.filtered = state.items;
+  const collections = [...new Set(state.groups.map((group) => group.collection))];
+  if (els.playerAlbum && collections.length === 1) state.collection = collections[0];
   const query = new URLSearchParams(window.location.search).get("q");
   if (query) {
     state.query = query;
     els.searchInput.value = query;
   }
+  if (els.viewSwitch) setView(new URLSearchParams(window.location.search).get("view"));
   renderDiscovery();
   applyFilters();
 }

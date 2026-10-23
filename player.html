@@ -34,11 +34,21 @@
       </div>
     </header>
 
-    <main>
+    <main class="player-album" id="playerAlbum">
+      <section class="player-collection" id="collectionSpotlight" aria-label="玩家分享合集" hidden>
+        <div class="player-collection-image"><img id="collectionCover" alt="" /></div>
+        <div class="player-collection-copy">
+          <p class="player-collection-label">玩家分享 / COLLECTION</p>
+          <h2 id="collectionTitle"></h2>
+          <p id="collectionCount"></p>
+          <div class="collection-filter" id="collectionFilter" aria-label="合集筛选"></div>
+        </div>
+      </section>
+
       <section class="controls" aria-label="检索筛选">
         <label class="search-wrap">
           <span>搜索</span>
-          <input id="searchInput" type="search" autocomplete="off" placeholder="输入标题、日期、年份、玩家昵称、关键词..." />
+          <input id="searchInput" type="search" autocomplete="off" placeholder="搜索作品编号、名称或描述" />
         </label>
         <label class="page-size-wrap">
           <span>每页</span>
@@ -62,16 +72,6 @@
             <option value="100">100 组</option>
           </select>
         </label>
-        <div class="filters">
-          <div class="filter-row">
-            <span class="filter-label">合集</span>
-            <div class="collection-filter" id="collectionFilter" aria-label="合集筛选"></div>
-          </div>
-          <div class="filter-row">
-            <span class="filter-label">年份</span>
-            <div class="year-filter" id="yearFilter" aria-label="年份筛选"></div>
-          </div>
-        </div>
       </section>
 
       <section class="summary" id="summaryText">正在加载玩家分享数据...</section>
@@ -86,7 +86,7 @@
 
       <section class="empty" id="emptyState" hidden>
         <h2>暂无玩家分享图文</h2>
-        <p>后续把玩家分享图片和说明整理到数据文件后，这里会自动支持搜索、筛选和查看大图。</p>
+        <p>请试试其他关键词或合集。</p>
       </section>
     </main>
 

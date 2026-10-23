@@ -34,11 +34,11 @@
       </div>
     </header>
 
-    <main>
+    <main class="official-album" id="albumMain">
       <section class="controls" aria-label="检索筛选">
         <label class="search-wrap">
           <span>搜索</span>
-          <input id="searchInput" type="search" autocomplete="off" placeholder="输入标题、日期、年份、材质、关键词..." />
+          <input id="searchInput" type="search" autocomplete="off" aria-label="搜索图文" placeholder="输入标题、日期、年份、材质、关键词..." />
         </label>
         <label class="page-size-wrap">
           <span>每页</span>
@@ -62,7 +62,10 @@
             <option value="100">100 组</option>
           </select>
         </label>
-        <div class="year-filter" id="yearFilter" aria-label="年份筛选"></div>
+        <div class="year-control">
+          <span class="year-label">按年份浏览</span>
+          <div class="year-filter" id="yearFilter" aria-label="年份筛选"></div>
+        </div>
       </section>
 
       <section class="discovery-strip" aria-label="画册发现" hidden>
@@ -76,7 +79,20 @@
         </div>
       </section>
 
-      <section class="summary" id="summaryText">正在加载图文数据...</section>
+      <section class="results-bar" aria-label="浏览结果">
+        <div class="results-copy">
+          <h2 class="list-view-heading">作品目录</h2>
+          <p class="summary" id="summaryText">正在加载图文数据...</p>
+        </div>
+        <div class="view-switch" id="viewSwitch" role="group" aria-label="展示方式">
+          <button type="button" data-view="grid" aria-label="网格视图" title="网格视图" aria-pressed="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button type="button" data-view="list" aria-label="目录视图" title="目录视图" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          </button>
+        </div>
+      </section>
 
       <section class="gallery" id="gallery" aria-label="图文列表"></section>
 
