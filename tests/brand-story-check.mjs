@@ -35,6 +35,18 @@ async function run() {
       assert.equal(await page.locator("h1").textContent(), "品牌故事");
       const philosophy = page.getByRole("region", { name: "创作理念" });
       assert.equal(await philosophy.locator(".philosophy-chapter").count(), themes.length);
+      const illustration = philosophy.locator(".brand-illustration");
+      assert.equal(await illustration.count(), 1);
+      assert.equal(await illustration.locator("figcaption").count(), 0);
+      assert.equal(await illustration.evaluate((figure) => {
+        const opening = figure.previousElementSibling;
+        const chapters = figure.nextElementSibling;
+        return opening?.classList.contains("philosophy-opening") && chapters?.classList.contains("philosophy-chapters");
+      }), true);
+      assert.equal(await illustration.locator("img").evaluate(async (image) => {
+        await image.decode();
+        return image.naturalWidth === 1536 && image.naturalHeight === 1024;
+      }), true);
       for (const [index, theme] of themes.entries()) {
         const chapter = philosophy.locator(".philosophy-chapter").nth(index);
         assert.equal(await chapter.locator("h3").textContent(), theme);

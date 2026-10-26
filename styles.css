@@ -1153,6 +1153,17 @@ body.view-list-page {
   font-style: normal;
 }
 
+.brand-illustration {
+  width: min(100%, 1000px);
+  margin: 0 auto 56px;
+}
+
+.brand-illustration img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .philosophy-chapter {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 44%);
@@ -2130,6 +2141,10 @@ body.view-list-page {
 
   .philosophy-opening blockquote {
     font-size: 18px;
+  }
+
+  .brand-illustration {
+    margin-bottom: 36px;
   }
 
   .philosophy-chapter,
