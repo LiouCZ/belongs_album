@@ -40,6 +40,15 @@ async function run() {
       await page.close();
     }
 
+    const story = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await story.goto(`file://${path.join(root, "brand-story.html")}`);
+    for (const selector of [".brand-illustration img", ".philosophy-chapter img", ".story-feature-image img", ".story-media img"]) {
+      assert.match(await story.locator(selector).first().evaluate((element) => getComputedStyle(element).cursor), /hourglass-cursor\.png/, selector);
+    }
+    assert.equal(await story.locator(".story-source-button").first().evaluate((element) => getComputedStyle(element).cursor), "pointer");
+    assert.doesNotMatch(await story.locator(".brand-logo").evaluate((element) => getComputedStyle(element).cursor), /hourglass-cursor\.png/);
+    await story.close();
+
     const { data, info } = await sharp(path.join(root, "assets/hourglass-cursor.png")).raw().toBuffer({ resolveWithObject: true });
     const pixel = (x, y) => [...data.subarray((y * info.width + x) * info.channels, (y * info.width + x + 1) * info.channels)];
     assert.equal(pixel(0, 0)[3], 0);
@@ -48,6 +57,8 @@ async function run() {
     const touch = await browser.newPage({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
     await touch.goto(`file://${path.join(root, "player.html")}`);
     assert.doesNotMatch(await touch.locator(".gallery .thumb").first().evaluate((element) => getComputedStyle(element).cursor), /hourglass-cursor\.png/);
+    await touch.goto(`file://${path.join(root, "brand-story.html")}`);
+    assert.doesNotMatch(await touch.locator(".brand-illustration img").evaluate((element) => getComputedStyle(element).cursor), /hourglass-cursor\.png/);
     await touch.close();
   } finally {
     await browser.close();

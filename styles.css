@@ -881,8 +881,13 @@ body.view-list-page {
     cursor: url("assets/hourglass-cursor.png") 9 6, pointer;
   }
 
-  .detail figure img {
+  .detail figure img,
+  .story-main img {
     cursor: url("assets/hourglass-cursor.png") 9 6, auto;
+  }
+
+  .story-main a img {
+    cursor: url("assets/hourglass-cursor.png") 9 6, pointer;
   }
 }
 
