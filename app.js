@@ -37,6 +37,7 @@ const els = {
   dialog: document.querySelector("#detailDialog"),
   closeDialog: document.querySelector("#closeDialog"),
   detailImage: document.querySelector("#detailImage"),
+  detailFigure: document.querySelector("#detailDialog figure"),
   carouselControls: document.querySelector("#carouselControls"),
   carouselCount: document.querySelector("#carouselCount"),
   prevImage: document.querySelector("#prevImage"),
@@ -336,6 +337,7 @@ function sourceRange(group) {
 
 function renderDetailImage() {
   if (!state.activeGroup) return;
+  resetImageInspection();
   const item = state.activeGroup.items[state.activeImageIndex];
   els.detailImage.src = item.image;
   els.detailImage.alt = state.activeGroup.title;
@@ -374,12 +376,136 @@ function openDetail(group) {
 
 function closeDetail() {
   els.dialog.close();
+  resetImageInspection();
   els.detailImage.removeAttribute("src");
   state.activeGroup = null;
   state.activeImageIndex = 0;
 }
 
+const inspectMedia = typeof window.matchMedia === "function"
+  ? window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)")
+  : { matches: true, addEventListener() {} };
+const imageLens = els.detailFigure && typeof document.createElement === "function"
+  ? document.createElement("div")
+  : null;
+if (imageLens) {
+  imageLens.id = "detailLens";
+  imageLens.className = "detail-lens";
+  imageLens.setAttribute("aria-hidden", "true");
+  imageLens.hidden = true;
+  els.detailFigure.append(imageLens);
+}
+
+let lastImageTap = null;
+let imageDrag = null;
+let imagePanX = 0;
+let imagePanY = 0;
+let zoomOriginX = 0.5;
+let zoomOriginY = 0.5;
+
+function resetImageInspection() {
+  if (!imageLens || !els.detailFigure) return;
+  imageLens.hidden = true;
+  els.detailFigure.classList.remove("is-image-zoomed");
+  els.detailImage.classList.remove("is-zoomed");
+  els.detailImage.style.removeProperty("--zoom-x");
+  els.detailImage.style.removeProperty("--zoom-y");
+  els.detailImage.style.removeProperty("--pan-x");
+  els.detailImage.style.removeProperty("--pan-y");
+  lastImageTap = null;
+  imageDrag = null;
+  imagePanX = 0;
+  imagePanY = 0;
+}
+
+function updateImageLens(event) {
+  if (!imageLens || !inspectMedia.matches || !els.detailImage.complete || !els.detailImage.naturalWidth) return;
+  const imageRect = els.detailImage.getBoundingClientRect();
+  const figureRect = els.detailFigure.getBoundingClientRect();
+  const size = Math.min(152, imageRect.width, imageRect.height);
+  if (size < 90) return;
+  const x = Math.max(0, Math.min(event.clientX - imageRect.left, imageRect.width));
+  const y = Math.max(0, Math.min(event.clientY - imageRect.top, imageRect.height));
+  const zoom = 2.4;
+  imageLens.style.width = `${size}px`;
+  imageLens.style.height = `${size}px`;
+  imageLens.style.left = `${imageRect.left - figureRect.left + Math.max(0, Math.min(x - size / 2, imageRect.width - size))}px`;
+  imageLens.style.top = `${imageRect.top - figureRect.top + Math.max(0, Math.min(y - size / 2, imageRect.height - size))}px`;
+  imageLens.style.backgroundImage = `url(${JSON.stringify(els.detailImage.currentSrc)})`;
+  imageLens.style.backgroundSize = `${imageRect.width * zoom}px ${imageRect.height * zoom}px`;
+  imageLens.style.backgroundPosition = `${size / 2 - x * zoom}px ${size / 2 - y * zoom}px`;
+  imageLens.hidden = false;
+}
+
+function toggleTouchZoom(event) {
+  if (!els.detailFigure) return;
+  if (els.detailImage.classList.contains("is-zoomed")) {
+    resetImageInspection();
+    return;
+  }
+  const rect = els.detailImage.getBoundingClientRect();
+  zoomOriginX = Math.max(0, Math.min((event.clientX - rect.left) / rect.width, 1));
+  zoomOriginY = Math.max(0, Math.min((event.clientY - rect.top) / rect.height, 1));
+  els.detailImage.style.setProperty("--zoom-x", `${zoomOriginX * 100}%`);
+  els.detailImage.style.setProperty("--zoom-y", `${zoomOriginY * 100}%`);
+  els.detailFigure.classList.add("is-image-zoomed");
+  els.detailImage.classList.add("is-zoomed");
+}
+
+function bindImageInspection() {
+  if (!els.gallery || !els.detailFigure || !els.detailImage) return;
+  els.gallery.addEventListener("pointermove", (event) => {
+    if (!inspectMedia.matches) return;
+    const card = event.target.closest(".card");
+    if (!card || !els.gallery.contains(card)) return;
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty("--glint-x", `${Math.round(event.clientX - rect.left)}px`);
+    card.style.setProperty("--glint-y", `${Math.round(event.clientY - rect.top)}px`);
+  });
+
+  els.detailImage.draggable = false;
+  els.detailImage.addEventListener("pointermove", (event) => {
+    if (imageDrag && event.pointerId === imageDrag.pointerId) {
+      if (Math.hypot(event.clientX - imageDrag.x, event.clientY - imageDrag.y) > 8) imageDrag.moved = true;
+      const width = els.detailImage.offsetWidth;
+      const height = els.detailImage.offsetHeight;
+      imagePanX = Math.max(-(width * (1 - zoomOriginX)), Math.min(width * zoomOriginX, imageDrag.panX + event.clientX - imageDrag.x));
+      imagePanY = Math.max(-(height * (1 - zoomOriginY)), Math.min(height * zoomOriginY, imageDrag.panY + event.clientY - imageDrag.y));
+      els.detailImage.style.setProperty("--pan-x", `${imagePanX}px`);
+      els.detailImage.style.setProperty("--pan-y", `${imagePanY}px`);
+      return;
+    }
+    updateImageLens(event);
+  });
+  els.detailImage.addEventListener("pointerleave", () => { imageLens.hidden = true; });
+  els.detailImage.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "touch" || !els.detailImage.classList.contains("is-zoomed")) return;
+    imageDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, panX: imagePanX, panY: imagePanY, moved: false };
+    els.detailImage.setPointerCapture(event.pointerId);
+  });
+  els.detailImage.addEventListener("pointerup", (event) => {
+    if (event.pointerType !== "touch") return;
+    if (imageDrag?.moved) {
+      imageDrag = null;
+      lastImageTap = null;
+      return;
+    }
+    imageDrag = null;
+    const now = performance.now();
+    if (lastImageTap && now - lastImageTap.time < 360 && Math.hypot(event.clientX - lastImageTap.x, event.clientY - lastImageTap.y) < 28) {
+      event.preventDefault();
+      toggleTouchZoom(event);
+      lastImageTap = null;
+    } else {
+      lastImageTap = { time: now, x: event.clientX, y: event.clientY };
+    }
+  });
+  els.detailImage.addEventListener("pointercancel", () => { imageDrag = null; lastImageTap = null; imageLens.hidden = true; });
+  inspectMedia.addEventListener("change", () => { imageLens.hidden = true; });
+}
+
 function bindEvents() {
+  bindImageInspection();
   if (els.viewSwitch) {
     els.viewSwitch.addEventListener("click", (event) => {
       const button = event.target.closest("[data-view]");

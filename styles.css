@@ -245,6 +245,16 @@ select {
   overflow: hidden;
   border: 0;
   background: transparent;
+  padding: 0;
+}
+
+.brand-intro-trigger {
+  cursor: pointer;
+}
+
+.brand-intro-trigger:focus-visible {
+  outline: 2px solid var(--header-text);
+  outline-offset: 3px;
 }
 
 .brand-logo {
@@ -333,6 +343,37 @@ p {
 .top-link.is-active {
   border-color: var(--header-text);
   background: rgba(244, 241, 234, 0.16);
+}
+
+.page-hourglass-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: #273234;
+  pointer-events: none;
+}
+
+.page-hourglass-transition img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  filter: invert(1);
+}
+
+.page-hourglass-transition.is-leaving {
+  animation: hourglass-cover 450ms ease-in forwards;
+}
+
+.page-hourglass-transition.is-entering {
+  animation: hourglass-cover 450ms ease-out reverse forwards;
+}
+
+@keyframes hourglass-cover {
+  0% { clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%); }
+  55% { clip-path: polygon(0 0, 100% 0, 50% 50%, 100% 100%, 0 100%, 50% 50%); }
+  100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 100% 100%, 0 100%, 0 0); }
 }
 
 main {
@@ -844,6 +885,7 @@ body.view-list-page {
 }
 
 .card {
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr;
   min-width: 0;
@@ -859,6 +901,26 @@ body.view-list-page {
   border-color: rgba(13, 15, 16, 0.58);
   box-shadow: var(--shadow);
   transform: translateY(-2px);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .gallery .card::after {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border: 2px solid transparent;
+    background: radial-gradient(140px circle at var(--glint-x, 50%) var(--glint-y, 50%), #ffffff 0%, #b4c9c8 35%, transparent 85%) border-box;
+    mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    pointer-events: none;
+    content: "";
+    transition: opacity 180ms ease;
+  }
+
+  .gallery .card:hover::after {
+    opacity: 0.95;
+  }
 }
 
 .thumb {
@@ -1056,10 +1118,38 @@ body.view-list-page {
   max-width: 100%;
   max-height: calc(100vh - 168px);
   object-fit: contain;
+  touch-action: manipulation;
+}
+
+.detail figure.is-image-zoomed {
+  overflow: hidden;
+}
+
+.detail figure img.is-zoomed {
+  z-index: 1;
+  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(2);
+  transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+  touch-action: none;
+}
+
+.detail-lens {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background-color: var(--paper-2);
+  background-repeat: no-repeat;
+  box-shadow: 0 8px 24px rgba(13, 15, 16, 0.28);
+  pointer-events: none;
+}
+
+.detail-lens[hidden] {
+  display: none;
 }
 
 .carousel-controls {
   position: static;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;

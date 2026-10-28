@@ -45,7 +45,7 @@ async function run() {
     assert.equal(await home.locator("#siteEggDialog").isVisible(), false);
     await home.locator("#closeDialog").click();
     await home.reload();
-    await home.locator("#closeIntro").click();
+    assert.equal(await home.locator("#introDialog").isVisible(), false);
     await home.locator("#siteEggTrigger").click();
     await home.locator("#timeTrace button").first().click();
     assert.equal(await home.locator("#detailDialog").isVisible(), true);

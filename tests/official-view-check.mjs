@@ -43,7 +43,7 @@ async function run() {
     assert.ok(filteredCount > 0 && filteredCount < 729);
     assert.ok(await home.locator(".gallery .card-list").count() > 0);
     await home.reload();
-    await home.locator("#closeIntro").click();
+    assert.equal(await home.locator("#introDialog").isVisible(), false);
     assert.equal(await home.locator(".gallery .card-list").count(), 20);
 
     await home.locator("#yearFilter [data-year='2021']").click();

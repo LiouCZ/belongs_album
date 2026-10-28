@@ -49,16 +49,25 @@ async function checkIntro(page) {
   await page.locator("#closeIntro").click();
   assert.equal(await dialog.isVisible(), false);
   await page.reload();
-  await dialog.waitFor({ state: "visible" });
-  assert.equal(await page.locator("#introCount").textContent(), "1 / 3");
+  assert.equal(await dialog.isVisible(), false);
+  await page.locator("#openIntro").click();
+  assert.equal(await dialog.isVisible(), true);
+  await page.locator("#closeIntro").click();
+  await page.reload();
+  assert.equal(await dialog.isVisible(), false);
+  const sameBrowser = await page.context().newPage();
+  await sameBrowser.goto(`file://${path.join(root, "index.html")}`);
+  assert.equal(await sameBrowser.locator("#introDialog").isVisible(), false);
+  await sameBrowser.close();
 }
 
 async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
   try {
-    const desktop = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const desktopContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const desktop = await desktopContext.newPage();
     await checkIntro(desktop);
-    await desktop.close();
+    await desktopContext.close();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await mobile.goto(`file://${path.join(root, "index.html")}`);
