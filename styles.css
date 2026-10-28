@@ -244,7 +244,7 @@ select {
   place-items: center;
   overflow: hidden;
   border: 0;
-  background: var(--bg);
+  background: transparent;
 }
 
 .brand-logo {
@@ -607,6 +607,10 @@ body.view-list-page {
   background: #262d2e;
 }
 
+.view-list-page .brand-logo {
+  filter: invert(1);
+}
+
 .official-album.is-list-view {
   display: grid;
   grid-template-columns: 230px minmax(0, 1fr);
@@ -870,6 +874,16 @@ body.view-list-page {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gallery .thumb {
+    cursor: url("assets/hourglass-cursor.png") 9 6, pointer;
+  }
+
+  .detail figure img {
+    cursor: url("assets/hourglass-cursor.png") 9 6, auto;
+  }
 }
 
 .image-count {
