@@ -24,9 +24,9 @@
   grid-template-columns: minmax(220px, 29%) minmax(0, 1fr);
   min-height: 210px;
   margin-bottom: 24px;
-  border-top: 1px solid #c3cac5;
-  border-bottom: 1px solid #c3cac5;
-  background: #e1e5e1;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
 }
 
 .player-collection[hidden] {
@@ -37,7 +37,7 @@
   display: grid;
   min-width: 0;
   place-items: center;
-  background: #d4dad5;
+  background: var(--paper-2);
   overflow: hidden;
 }
 
@@ -55,13 +55,13 @@
 }
 
 .player-collection-label {
-  color: #526061;
+  color: var(--muted);
   font-size: 12px;
 }
 
 .player-collection-copy h2 {
   margin-top: 12px;
-  color: #1c2526;
+  color: var(--ink);
   font-size: 30px;
   font-weight: 500;
   line-height: 1.25;
@@ -69,7 +69,7 @@
 
 .player-collection-copy > p:last-of-type {
   margin-top: 8px;
-  color: #536062;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -105,7 +105,7 @@
 }
 
 .player-album .player-card:hover {
-  box-shadow: 0 12px 28px rgba(13, 15, 16, 0.16);
+  box-shadow: 0 8px 20px rgba(13, 15, 16, 0.12);
 }
 
 .player-card .thumb {
@@ -184,7 +184,7 @@
 
   .player-album .search-wrap input,
   .player-album .page-size-wrap select {
-    height: 42px;
+    height: 44px;
   }
 }
 
@@ -239,8 +239,8 @@ select {
 .brand-mark {
   display: grid;
   flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
+  width: 64px;
+  height: 64px;
   place-items: center;
   overflow: hidden;
   border: 0;
@@ -258,10 +258,12 @@ select {
 }
 
 .brand-logo {
+  --logo-stroke: drop-shadow(0.35px 0 0 #000) drop-shadow(-0.35px 0 0 #000);
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: var(--logo-stroke);
 }
 
 h1,
@@ -476,40 +478,48 @@ main {
 }
 
 .official-album .search-wrap input,
-.official-album .album-select {
+.official-album .album-select,
+.player-album .search-wrap input,
+.player-album .album-select {
   height: 44px;
-  border: 1px solid #bac3bf;
+  border: 1px solid var(--line);
   border-radius: 4px;
-  background: #f3f5f1;
-  color: #283536;
+  background: var(--paper);
+  color: var(--ink);
   font-size: 14px;
 }
 
-.official-album .album-select {
+.official-album .album-select,
+.player-album .album-select {
   padding-inline: 12px;
   cursor: pointer;
   font-variant-numeric: tabular-nums;
 }
 
-.official-album .album-select:hover {
-  border-color: #879894;
+.official-album .album-select:hover,
+.player-album .album-select:hover {
+  border-color: var(--muted);
 }
 
 .official-album .search-wrap input:focus,
-.official-album .album-select:focus {
-  border-color: #819590;
+.official-album .album-select:focus,
+.player-album .search-wrap input:focus,
+.player-album .album-select:focus {
+  border-color: var(--accent);
   box-shadow: none;
 }
 
 .official-album .search-wrap input:focus-visible,
-.official-album .album-select:focus-visible {
-  outline: 2px solid #dce7df;
+.official-album .album-select:focus-visible,
+.player-album .search-wrap input:focus-visible,
+.player-album .album-select:focus-visible {
+  outline: 2px solid var(--paper);
   outline-offset: 2px;
 }
 
 .is-list-view .search-wrap input:focus-visible,
 .is-list-view .album-select:focus-visible {
-  outline-color: #52736b;
+  outline-color: var(--accent);
 }
 
 @supports (appearance: base-select) {
@@ -553,7 +563,7 @@ main {
   .album-select .select-option-count {
     flex-shrink: 0;
     margin-left: auto;
-    color: #65736e;
+    color: var(--muted);
     font-size: 12px;
     font-weight: 400;
     white-space: nowrap;
@@ -565,8 +575,8 @@ main {
     width: 7px;
     height: 7px;
     margin: -3px 2px 0 0;
-    border-right: 1.5px solid #65736e;
-    border-bottom: 1.5px solid #65736e;
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
     rotate: 45deg;
   }
 
@@ -574,13 +584,13 @@ main {
     max-height: min(360px, 55dvh);
     margin-block: 6px;
     padding: 5px;
-    border: 1px solid #c4cdc7;
+    border: 1px solid var(--line);
     border-radius: 4px;
-    background: #fafbf8;
-    color: #283536;
-    box-shadow: 0 8px 24px rgba(24, 39, 35, 0.14);
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 8px 24px rgba(13, 15, 16, 0.14);
     scrollbar-width: thin;
-    scrollbar-color: #b8c4bc transparent;
+    scrollbar-color: var(--line) transparent;
     font-size: 14px;
   }
 
@@ -603,7 +613,7 @@ main {
     order: 1;
     width: 14px;
     margin-left: auto;
-    color: #42645a;
+    color: var(--ink);
   }
 
   .category-wrap .album-select option::checkmark {
@@ -612,19 +622,19 @@ main {
   }
 
   .album-select option:checked {
-    background: #e1e9e2;
-    color: #29443a;
+    background: var(--paper-2);
+    color: var(--ink);
     font-weight: 500;
   }
 
   .album-select option:not(:disabled):hover,
   .album-select option:focus-visible {
-    background: #eaf0ea;
+    background: var(--paper-2);
   }
 
   .album-select option:disabled,
   .album-select option:disabled .select-option-count {
-    color: #8c9691;
+    color: var(--muted);
   }
 }
 
@@ -851,7 +861,7 @@ body.view-list-page {
 }
 
 .view-list-page .brand-logo {
-  filter: invert(1);
+  filter: var(--logo-stroke) invert(1);
 }
 
 .official-album.is-list-view {
@@ -891,7 +901,7 @@ body.view-list-page {
 .is-list-view .category-wrap select,
 .is-list-view .page-size-wrap select,
 .is-list-view .year-control select {
-  background: #fff;
+  background: var(--paper);
 }
 
 .is-list-view .results-bar {
@@ -948,6 +958,7 @@ body.view-list-page {
   padding: 14px 0;
   border: 0;
   border-bottom: 1px solid #bdc4c0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
   overflow: visible;
@@ -1021,17 +1032,34 @@ body.view-list-page {
   grid-row: 3;
 }
 
-.is-list-view .pagination span {
-  color: #1c2021;
+.is-list-view .pagination {
+  --page-ink: #344d43;
+  --page-muted: #60736a;
+  --page-line: #c4cfc6;
+  --page-hover: #e0e8e0;
+  --page-current-bg: #2d4037;
+  --page-current-ink: #f3f5f1;
+  --page-disabled: #a0aca5;
 }
 
 .pagination {
+  --page-ink: #f3f5f1;
+  --page-muted: rgba(244, 241, 234, 0.72);
+  --page-line: rgba(244, 241, 234, 0.22);
+  --page-hover: rgba(244, 241, 234, 0.1);
+  --page-current-bg: #edf1eb;
+  --page-current-ink: #2b3936;
+  --page-disabled: rgba(244, 241, 234, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
   margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--page-line);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .pagination[hidden] {
@@ -1039,13 +1067,28 @@ body.view-list-page {
 }
 
 .pagination button {
-  min-width: 72px;
-  height: 40px;
-  padding: 0 10px;
-  border: 1px solid rgba(13, 15, 16, 0.28);
-  background: var(--paper);
-  color: var(--ink);
+  display: inline-flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--page-muted);
   cursor: pointer;
+}
+
+.pagination > button {
+  border-color: var(--page-line);
+}
+
+.pagination-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .page-numbers {
@@ -1055,41 +1098,43 @@ body.view-list-page {
   gap: 4px;
 }
 
-.pagination .page-numbers button {
-  min-width: 36px;
-  padding: 0 4px;
-}
-
 .pagination .page-numbers button.is-current {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--paper);
+  background: var(--page-current-bg);
+  color: var(--page-current-ink);
+  font-weight: 500;
 }
 
 .pagination .page-gap {
-  min-width: 12px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 36px;
+  color: var(--page-muted);
   text-align: center;
 }
 
 .pagination button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--page-ink);
   outline-offset: 2px;
 }
 
-.pagination button:not(:disabled):hover {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--paper);
+.pagination button:not(:disabled):not(.is-current):hover {
+  background: var(--page-hover);
+  color: var(--page-ink);
 }
 
 .pagination button:disabled {
+  border-color: transparent;
+  color: var(--page-disabled);
   cursor: not-allowed;
-  opacity: 0.45;
 }
 
-.pagination span {
-  min-width: 104px;
-  color: var(--header-text);
+.pagination #pageInfo {
+  min-width: 110px;
+  margin-left: 8px;
+  color: var(--page-muted);
+  font-size: 12px;
+  line-height: 36px;
   text-align: center;
   white-space: nowrap;
 }
@@ -1100,8 +1145,9 @@ body.view-list-page {
   grid-template-rows: auto 1fr;
   min-width: 0;
   border: 1px solid var(--line);
+  border-radius: 8px;
   background: var(--paper);
-  box-shadow: 0 10px 26px rgba(13, 15, 16, 0.16);
+  box-shadow: 0 3px 12px rgba(13, 15, 16, 0.1);
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
@@ -1109,8 +1155,13 @@ body.view-list-page {
 
 .card:hover {
   border-color: rgba(13, 15, 16, 0.58);
-  box-shadow: var(--shadow);
+  box-shadow: 0 8px 20px rgba(13, 15, 16, 0.14);
   transform: translateY(-2px);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 3px;
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
@@ -1119,6 +1170,7 @@ body.view-list-page {
     inset: 0;
     z-index: 1;
     border: 2px solid transparent;
+    border-radius: inherit;
     background: radial-gradient(140px circle at var(--glint-x, 50%) var(--glint-y, 50%), #ffffff 0%, #b4c9c8 35%, transparent 85%) border-box;
     mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
@@ -1169,6 +1221,7 @@ body.view-list-page {
   top: 12px;
   min-width: 48px;
   padding: 5px 9px;
+  border-radius: 4px;
   background: rgba(13, 15, 16, 0.78);
   color: var(--paper);
   font-size: 13px;
@@ -2347,14 +2400,19 @@ body.view-list-page {
 }
 
 @media (max-width: 860px) {
+  .brand-mark {
+    width: 56px;
+    height: 56px;
+  }
+
   .view-list-page .topbar {
     gap: 10px;
     padding: 12px 18px;
   }
 
   .view-list-page .brand-mark {
-    width: 42px;
-    height: 42px;
+    width: 48px;
+    height: 48px;
   }
 
   .view-list-page .brand h1 {
@@ -2483,10 +2541,6 @@ body.view-list-page {
     justify-content: flex-start;
   }
 
-  .pagination {
-    justify-content: space-between;
-  }
-
   .gallery {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;
@@ -2575,43 +2629,32 @@ body.view-list-page {
 
   .pagination {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 36px 36px minmax(0, 1fr) 36px 36px;
     gap: 8px 6px;
-  }
-
-  .pagination button {
-    min-width: 0;
-    width: 100%;
-    height: 38px;
-    padding: 0 4px;
-    font-size: 12px;
   }
 
   .pagination #firstPage,
   .pagination #prevPage,
   .pagination #nextPage,
   .pagination #lastPage {
-    grid-row: 1;
+    grid-row: 2;
   }
 
   .pagination #firstPage { grid-column: 1; }
   .pagination #prevPage { grid-column: 2; }
-  .pagination #nextPage { grid-column: 3; }
-  .pagination #lastPage { grid-column: 4; }
+  .pagination #nextPage { grid-column: 4; }
+  .pagination #lastPage { grid-column: 5; }
 
   .pagination .page-numbers {
     grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .pagination .page-numbers button {
-    width: 36px;
+    grid-row: 1;
   }
 
   .pagination #pageInfo {
-    grid-column: 1 / -1;
-    grid-row: 3;
+    grid-column: 3;
+    grid-row: 2;
     min-width: 0;
+    margin-left: 0;
   }
 
   .discovery-strip {

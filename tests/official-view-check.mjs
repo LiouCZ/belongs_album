@@ -24,6 +24,14 @@ async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
   try {
     const home = await openHome(browser);
+    assert.equal(await home.locator(".gallery .card").first().evaluate((card) =>
+      getComputedStyle(card).borderRadius), "8px", "grid cards should have soft corners");
+    assert.equal(await home.locator(".gallery .card").first().evaluate((card) =>
+      getComputedStyle(card).borderTopColor), "rgb(201, 196, 184)", "keep the original card border palette");
+    for (const control of ["#searchInput", "#categorySelect", "#pageSizeSelect", "#yearFilter"]) {
+      assert.equal(await home.locator(control).evaluate((node) => getComputedStyle(node).backgroundColor),
+        "rgb(244, 241, 234)", "official controls should match the album card background");
+    }
     const yearSelect = home.getByRole("combobox", { name: "年份筛选" });
     assert.equal(await yearSelect.count(), 1, "year filter should be a dropdown");
     assert.equal(await yearSelect.inputValue(), "all");
@@ -38,6 +46,10 @@ async function run() {
     assert.equal(new URL(home.url()).searchParams.get("view"), "list");
     assert.equal(await home.locator("#viewSwitch [data-view='list']").getAttribute("aria-pressed"), "true");
     assert.equal(await home.locator(".gallery .card-list").count(), 20);
+    assert.equal(await home.locator("#searchInput").evaluate((node) => getComputedStyle(node).backgroundColor),
+      "rgb(244, 241, 234)", "directory controls should keep the same paper background");
+    assert.equal(await home.locator(".gallery .card-list").first().evaluate((card) =>
+      getComputedStyle(card).borderRadius), "0px", "directory rows should remain unframed");
     assert.equal(await home.locator(".gallery .card").first().getAttribute("data-id"), firstId);
     await home.locator(".gallery .card").first().click();
     assert.equal(await home.locator("#detailDialog").isVisible(), true);

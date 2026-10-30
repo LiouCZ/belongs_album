@@ -53,7 +53,8 @@
         </label>
         <label class="page-size-wrap">
           <span>每页</span>
-          <select id="pageSizeSelect" aria-label="每页显示数量">
+          <select class="album-select" id="pageSizeSelect" aria-label="每页显示数量">
+            <button type="button"><selectedcontent></selectedcontent></button>
             <option value="20" selected>20 组</option>
             <option value="25">25 组</option>
             <option value="30">30 组</option>
@@ -80,11 +81,19 @@
       <section class="gallery" id="gallery" aria-label="玩家分享图文列表"></section>
 
       <nav class="pagination" id="pagination" aria-label="分页" hidden>
-        <button type="button" id="firstPage">第一页</button>
-        <button type="button" id="prevPage">上一页</button>
+        <button type="button" id="firstPage" aria-label="第一页" title="第一页">
+          <svg class="pagination-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>
+        </button>
+        <button type="button" id="prevPage" aria-label="上一页" title="上一页">
+          <svg class="pagination-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
         <div class="page-numbers" id="pageNumbers" aria-label="选择页码"></div>
-        <button type="button" id="nextPage">下一页</button>
-        <button type="button" id="lastPage">最后一页</button>
+        <button type="button" id="nextPage" aria-label="下一页" title="下一页">
+          <svg class="pagination-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <button type="button" id="lastPage" aria-label="最后一页" title="最后一页">
+          <svg class="pagination-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>
+        </button>
         <span id="pageInfo" aria-live="polite">第 1 / 1 页</span>
       </nav>
 

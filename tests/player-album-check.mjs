@@ -29,6 +29,7 @@ async function run() {
   try {
     await assertHomeLinksToPlayerAlbum(browser);
     await assertPlayerAlbumRendersWingGallery(browser);
+    await assertPlayerControlsResponsive(browser);
   } finally {
     await browser.close();
   }
@@ -74,6 +75,12 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
   assert.equal(await page.locator("#emptyState").isHidden(), true);
   assert.equal(await page.locator(".player-card").count(), 20);
   assert.equal(await page.locator(".player-card .excerpt").count(), 0);
+  assert.equal(await page.locator(".player-card").first().evaluate((card) =>
+    getComputedStyle(card).borderRadius), "8px", "player cards should have soft corners");
+  assert.equal(await page.locator(".player-card").first().evaluate((card) =>
+    getComputedStyle(card).overflow), "hidden", "images should follow the card corners");
+  assert.equal(await page.locator(".player-card .thumb img").first().evaluate((image) =>
+    getComputedStyle(image).objectFit), "contain", "rounding the card must not crop the photograph");
   const thumbBox = await page.locator(".thumb").first().boundingBox();
   assert.ok(Math.abs(thumbBox.width / thumbBox.height - 4 / 3) < 0.02, "gallery image frame should use a 4:3 ratio");
 
@@ -113,6 +120,46 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
 async function expectVisible(locator, message) {
   assert.equal(await locator.count(), 1, message);
   assert.equal(await locator.isVisible(), true, message);
+}
+
+async function assertPlayerControlsResponsive(browser) {
+  for (const width of [320, 390, 768, 1440]) {
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    page.setDefaultTimeout(5000);
+    const errors = await collectPageErrors(page);
+    await page.goto(`file://${path.join(root, "player.html")}`);
+    const search = page.getByRole("searchbox");
+    const select = page.getByRole("combobox", { name: "每页显示数量" });
+    assert.equal(await page.locator("#collectionSpotlight").evaluate((node) => getComputedStyle(node).backgroundColor),
+      await page.locator(".player-card .card-body").first().evaluate((node) => getComputedStyle(node).backgroundColor),
+      "collection introduction should match the card background");
+    for (const control of [search, select]) {
+      assert.equal(await control.evaluate((node) => getComputedStyle(node).borderRadius), "4px");
+      assert.equal(await control.evaluate((node) => getComputedStyle(node).backgroundColor), "rgb(244, 241, 234)", "keep the original paper-colored controls");
+      assert.equal(await control.evaluate((node) => getComputedStyle(node).color), "rgb(17, 19, 21)", "keep the original ink color");
+      assert.equal((await control.boundingBox()).height, 44, "player controls should align at a compact height");
+    }
+    if (await page.evaluate(() => CSS.supports("appearance", "base-select"))) {
+      await select.click();
+      await select.locator('option[value="25"]').click();
+      assert.equal(await select.evaluate((node) => node.matches(":open")), false);
+      assert.equal(await select.locator("selectedcontent").textContent(), "25 组");
+    } else {
+      await select.selectOption("25");
+    }
+    assert.equal(await page.locator(".player-card").count(), 25);
+    await search.fill("羽翼 #21");
+    assert.equal(await page.locator(".player-card").count(), 1);
+    assert.equal(await select.inputValue(), "25");
+    assert.equal(await page.evaluate(() => {
+      const controls = [...document.querySelectorAll(".controls input, .controls select")].map((node) => node.getBoundingClientRect());
+      return document.documentElement.scrollWidth <= innerWidth && controls.every((box) => box.left >= 0 && box.right <= innerWidth)
+        && controls[0].right <= controls[1].left;
+    }), true, "player controls should fit without overlap");
+    assert.deepEqual(errors, []);
+    console.log(`PASS player controls and selection ${width}px`);
+    await page.close();
+  }
 }
 
 run().catch((error) => {
