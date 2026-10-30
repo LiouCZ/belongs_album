@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ids = [
   "totalCount", "visibleCount", "searchInput", "pageSizeSelect", "collectionFilter",
   "collectionSpotlight", "collectionCover", "collectionTitle", "collectionCount",
-  "summaryText", "gallery", "pagination", "prevPage", "nextPage", "pageInfo",
+  "summaryText", "gallery", "pagination", "firstPage", "prevPage", "pageNumbers", "nextPage", "lastPage", "pageInfo",
   "emptyState", "detailDialog", "closeDialog", "detailImage", "carouselControls",
   "carouselCount", "prevImage", "nextImage", "detailMeta", "detailTitle",
   "detailIndex", "detailCaption", "playerAlbum",

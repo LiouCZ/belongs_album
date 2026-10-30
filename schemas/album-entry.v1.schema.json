@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lioucz.github.io/belongs_album/schemas/album-entry.v1.schema.json",
+  "title": "Belongs album work v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "source", "date", "title", "description", "images", "reviewStatus"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "source": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "articleId", "position"],
+          "properties": {
+            "kind": { "const": "wechat" },
+            "articleId": { "type": "string", "pattern": "^wechat:[A-Za-z0-9_-]+$" },
+            "position": { "type": "integer", "minimum": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "document", "sourceImageIndexes"],
+          "properties": {
+            "kind": { "const": "docx" },
+            "document": { "type": "string", "minLength": 1 },
+            "sourceImageIndexes": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 }, "uniqueItems": true }
+          }
+        }
+      ]
+    },
+    "date": { "type": ["string", "null"], "format": "date" },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "images": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 },
+          "sourceImageId": { "type": "string", "minLength": 1 },
+          "crop": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["x", "y", "width", "height"],
+            "properties": {
+              "x": { "type": "integer", "minimum": 0 },
+              "y": { "type": "integer", "minimum": 0 },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "sourceImageIndex": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "reviewStatus": { "enum": ["needs_review", "verified"] },
+    "reviewNotes": { "type": "string" }
+  }
+}

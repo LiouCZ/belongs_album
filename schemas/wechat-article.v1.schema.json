@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lioucz.github.io/belongs_album/schemas/wechat-article.v1.schema.json",
+  "title": "Belongs curated WeChat article v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "source", "captureStatus", "title", "publishedDate", "theme", "sourceImages", "workIds"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^wechat:[A-Za-z0-9_-]+$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "account"],
+      "properties": {
+        "url": { "type": "string", "pattern": "^https://mp\\.weixin\\.qq\\.com/s/[A-Za-z0-9_-]+$" },
+        "account": { "type": "string", "minLength": 1 }
+      }
+    },
+    "captureStatus": { "enum": ["partial", "complete"] },
+    "title": { "type": "string", "minLength": 1 },
+    "publishedDate": { "type": ["string", "null"], "format": "date" },
+    "theme": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["date", "text"],
+          "properties": {
+            "date": { "type": ["string", "null"], "format": "date" },
+            "text": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "sourceImages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "originalUrl", "localPath", "sha256", "width", "height"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "originalUrl": { "type": "string", "format": "uri" },
+          "localPath": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "workIds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "notes": { "type": "string" }
+  }
+}

@@ -9,6 +9,7 @@ const state = {
   pageSize: 20,
   activeGroup: null,
   activeImageIndex: 0,
+  articles: new Map(),
   lastDiscoveryId: null,
   view: "grid",
 };
@@ -30,8 +31,11 @@ const els = {
   albumMain: document.querySelector("#albumMain"),
   viewSwitch: document.querySelector("#viewSwitch"),
   pagination: document.querySelector("#pagination"),
+  firstPage: document.querySelector("#firstPage"),
   prevPage: document.querySelector("#prevPage"),
+  pageNumbers: document.querySelector("#pageNumbers"),
   nextPage: document.querySelector("#nextPage"),
+  lastPage: document.querySelector("#lastPage"),
   pageInfo: document.querySelector("#pageInfo"),
   emptyState: document.querySelector("#emptyState"),
   dialog: document.querySelector("#detailDialog"),
@@ -46,6 +50,11 @@ const els = {
   detailTitle: document.querySelector("#detailTitle"),
   detailIndex: document.querySelector("#detailIndex"),
   detailCaption: document.querySelector("#detailCaption"),
+  openArticle: document.querySelector("#openArticle"),
+  articleDialog: document.querySelector("#articleDialog"),
+  articleDialogMeta: document.querySelector("#articleDialogMeta"),
+  articleBody: document.querySelector("#articleBody"),
+  closeArticle: document.querySelector("#closeArticle"),
   discovery: document.querySelector(".discovery-strip"),
   dailyPick: document.querySelector("#dailyPick"),
   timeTrace: document.querySelector("#timeTrace"),
@@ -61,7 +70,7 @@ function groupText(value) {
 }
 
 function groupKey(item) {
-  return [item.collection, item.date, item.title, item.caption].map(groupText).join("|");
+  return [item.collection, item.articleId, item.date, item.title, item.caption].map(groupText).join("|");
 }
 
 function createGroups(items) {
@@ -78,6 +87,7 @@ function createGroups(items) {
         date: item.date,
         title: item.title,
         caption: item.caption,
+        articleId: item.articleId || null,
         sourceIndex: item.sourceIndex,
         index: item.index,
         items: [],
@@ -94,6 +104,21 @@ function createGroups(items) {
     thumbHeight: group.items[0].thumbHeight,
     image: group.items[0].image,
   }));
+}
+
+function sortOfficialGroups(groups) {
+  let previousYear = null;
+  let previousDateKey = null;
+  return groups.map((group) => {
+    if (group.year !== previousYear) {
+      previousYear = group.year;
+      previousDateKey = null;
+    }
+    const explicitDateKey = datedGroup(group)?.key;
+    if (explicitDateKey !== undefined) previousDateKey = explicitDateKey;
+    return { group, dateKey: explicitDateKey ?? previousDateKey ?? Number(group.year) * 10000 };
+  }).sort((a, b) => a.dateKey - b.dateKey || a.group.sourceIndex - b.group.sourceIndex)
+    .map(({ group }) => group);
 }
 
 function searchableText(group) {
@@ -170,7 +195,7 @@ function renderCards(items) {
   }
   if (els.viewSwitch && state.view === "list") {
     els.gallery.innerHTML = items.map((item) => `
-      <article class="card card-list" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
+      <article class="card card-list ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
         <div class="thumb"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" /></div>
         <div class="card-body">
           <p class="meta">${escapeHtml(item.date)}</p>
@@ -188,7 +213,7 @@ function renderCards(items) {
   els.gallery.innerHTML = items
     .map(
       (item) => `
-        <article class="card" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
+        <article class="card ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
           <div class="thumb">
             <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
             ${item.imageCount > 1 ? `<span class="image-count">${item.imageCount} 张</span>` : ""}
@@ -291,8 +316,17 @@ function renderPagination() {
   state.page = Math.min(Math.max(1, state.page), pages);
   els.pagination.hidden = state.filtered.length === 0;
   els.pageInfo.textContent = `第 ${state.page} / ${pages} 页`;
-  els.prevPage.disabled = state.page <= 1;
-  els.nextPage.disabled = state.page >= pages;
+  els.firstPage.disabled = els.prevPage.disabled = state.page <= 1;
+  els.nextPage.disabled = els.lastPage.disabled = state.page >= pages;
+  const first = Math.max(1, Math.min(state.page - 2, pages - 4));
+  const last = Math.min(pages, first + 4);
+  els.pageNumbers.innerHTML = `${first > 1 ? '<span class="page-gap" aria-hidden="true">…</span>' : ""}${Array.from(
+    { length: last - first + 1 },
+    (_, offset) => {
+      const page = first + offset;
+      return `<button type="button" data-page="${page}" aria-label="第 ${page} 页"${page === state.page ? ' class="is-current" aria-current="page"' : ""}>${page}</button>`;
+    }
+  ).join("")}${last < pages ? '<span class="page-gap" aria-hidden="true">…</span>' : ""}`;
 }
 
 function applyFilters() {
@@ -366,12 +400,39 @@ function openDetail(group) {
     els.detailIndex.textContent = `${group.year} 第 ${String(group.index).padStart(3, "0")} 组 · ${group.imageCount} 张图片 · 全集 Item ${sourceRange(group)}`;
     els.detailCaption.textContent = group.caption || "无文字说明";
     els.detailCaption.hidden = false;
+    els.openArticle.hidden = !group.articleId;
   }
   if (typeof els.dialog.showModal === "function") {
     els.dialog.showModal();
   } else {
     els.dialog.setAttribute("open", "");
   }
+}
+
+function openArticle(articleId) {
+  const article = state.articles.get(articleId);
+  if (!article || !els.articleDialog) return;
+  els.articleDialogMeta.textContent = `${article.account} · ${article.date} · ${article.works.length} 件作品`;
+  els.articleBody.innerHTML = `
+    <div class="article-work-grid">${article.works.map((work, index) => `
+      <figure class="article-work">
+        <div class="article-work-images">${work.images.map((image) => `
+          <img src="${escapeHtml(image.path)}" alt="${escapeHtml(work.title)}" width="${image.width}" height="${image.height}" />
+        `).join("")}</div>
+        <figcaption>
+          <span class="article-work-number">${String(index + 1).padStart(2, "0")}</span>
+          <div><h3>${escapeHtml(work.title)}</h3><p>${escapeHtml(work.description)}</p></div>
+        </figcaption>
+      </figure>
+    `).join("")}</div>
+    ${article.theme ? `<footer class="article-theme">
+      <div><span>末尾主题描述</span><time class="article-theme-date">${escapeHtml(article.theme.date)}</time></div>
+      <blockquote class="article-theme-text">${escapeHtml(article.theme.text)}</blockquote>
+      <a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">查看公众号原文 ↗</a>
+    </footer>` : `<footer class="article-theme article-theme-source"><a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">查看公众号原文 ↗</a></footer>`}
+  `;
+  els.articleDialog.scrollTop = 0;
+  els.articleDialog.showModal();
 }
 
 function closeDetail() {
@@ -561,14 +622,18 @@ function bindEvents() {
     });
   }
 
-  els.prevPage.addEventListener("click", () => {
-    state.page = Math.max(1, state.page - 1);
+  function goToPage(page) {
+    state.page = Math.min(Math.max(1, page), totalPages());
     applyFilters();
-  });
+  }
 
-  els.nextPage.addEventListener("click", () => {
-    state.page = Math.min(totalPages(), state.page + 1);
-    applyFilters();
+  els.firstPage.addEventListener("click", () => goToPage(1));
+  els.prevPage.addEventListener("click", () => goToPage(state.page - 1));
+  els.nextPage.addEventListener("click", () => goToPage(state.page + 1));
+  els.lastPage.addEventListener("click", () => goToPage(totalPages()));
+  els.pageNumbers.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-page]");
+    if (button) goToPage(Number(button.dataset.page));
   });
 
   els.gallery.addEventListener("click", (event) => {
@@ -590,6 +655,17 @@ function bindEvents() {
   els.prevImage.addEventListener("click", () => moveDetailImage(-1));
   els.nextImage.addEventListener("click", () => moveDetailImage(1));
   els.closeDialog.addEventListener("click", closeDetail);
+  if (els.openArticle) {
+    els.openArticle.addEventListener("click", () => {
+      const articleId = state.activeGroup?.articleId;
+      closeDetail();
+      openArticle(articleId);
+    });
+    els.closeArticle.addEventListener("click", () => els.articleDialog.close());
+    els.articleDialog.addEventListener("click", (event) => {
+      if (event.target === els.articleDialog) els.articleDialog.close();
+    });
+  }
   els.dialog.addEventListener("click", (event) => {
     if (event.target === els.dialog) closeDetail();
   });
@@ -605,8 +681,11 @@ async function init() {
     }
     data = await response.json();
   }
-  state.items = data.items || [];
-  state.groups = createGroups(state.items);
+  const curated = els.playerAlbum ? null : window.BELONGS_CURATED;
+  state.items = [...(data.items || []), ...(curated?.items || [])];
+  state.articles = new Map((curated?.articles || []).map((article) => [article.id, article]));
+  const groups = createGroups(state.items);
+  state.groups = els.playerAlbum ? groups : sortOfficialGroups(groups);
   state.filtered = state.items;
   const collections = [...new Set(state.groups.map((group) => group.collection))];
   if (els.playerAlbum && collections.length === 1) state.collection = collections[0];

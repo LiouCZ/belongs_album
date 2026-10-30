@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "legacy:2021-04-16-waiting-002",
+  "source": {
+    "kind": "docx",
+    "document": "Belongs2021-2026公众号合集.docx",
+    "sourceImageIndexes": [2, 3]
+  },
+  "date": "2021-04-16",
+  "title": "等待",
+  "description": "手作，即是一段等待之旅。\n等待也意味着未知与期待。\n你我身在其中，或独自沉醉，或共享欢愉。",
+  "images": [
+    { "id": "2021-002-788d71b651", "path": "assets/images/2021/2021-002-788d71b651.jpg", "sourceImageIndex": 2 },
+    { "id": "2021-003-95b60c517d", "path": "assets/images/2021/2021-003-95b60c517d.jpg", "sourceImageIndex": 3 }
+  ],
+  "reviewStatus": "needs_review",
+  "reviewNotes": "由现有网页的两条图片记录合并；未核对 Word 原件，暂不标记为已人工校对。"
+}
