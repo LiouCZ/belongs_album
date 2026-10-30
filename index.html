@@ -21,15 +21,16 @@
       </div>
       <div class="top-actions">
         <nav class="site-nav" aria-label="画册切换">
-          <a class="top-link is-active" href="index.html">官方画册</a>
+          <a class="top-link is-active" href="index.html" aria-current="page">官方画册</a>
           <a class="top-link" href="player.html">玩家分享</a>
           <a class="top-link" href="brand-story.html">品牌故事</a>
         </nav>
-        <a class="top-link" href="vip.html">VIP 定制登记</a>
+        <a class="top-link top-link--utility" href="vip.html">VIP 定制登记</a>
         <div class="stats" aria-live="polite">
           <span id="visibleCount">0</span>
           <span class="muted">/</span>
           <span id="totalCount">0</span>
+          <span class="stats-unit">组</span>
         </div>
       </div>
     </header>
@@ -40,9 +41,17 @@
           <span>搜索</span>
           <input id="searchInput" type="search" autocomplete="off" aria-label="搜索图文" placeholder="输入标题、日期、年份、材质、关键词..." />
         </label>
+        <label class="category-wrap">
+          <span>品类</span>
+          <select class="album-select" id="categorySelect" aria-label="品类筛选">
+            <button type="button"><selectedcontent></selectedcontent></button>
+            <option value="all">全部品类</option>
+          </select>
+        </label>
         <label class="page-size-wrap">
           <span>每页</span>
-          <select id="pageSizeSelect" aria-label="每页显示数量">
+          <select class="album-select" id="pageSizeSelect" aria-label="每页显示数量">
+            <button type="button"><selectedcontent></selectedcontent></button>
             <option value="20" selected>20 组</option>
             <option value="25">25 组</option>
             <option value="30">30 组</option>
@@ -62,10 +71,13 @@
             <option value="100">100 组</option>
           </select>
         </label>
-        <div class="year-control">
-          <span class="year-label">按年份浏览</span>
-          <div class="year-filter" id="yearFilter" aria-label="年份筛选"></div>
-        </div>
+        <label class="year-control">
+          <span>年份</span>
+          <select class="album-select" id="yearFilter" aria-label="年份筛选">
+            <button type="button"><selectedcontent></selectedcontent></button>
+            <option value="all">全部年份</option>
+          </select>
+        </label>
       </section>
 
       <section class="discovery-strip" aria-label="画册发现" hidden>
@@ -107,7 +119,7 @@
 
       <section class="empty" id="emptyState" hidden>
         <h2>没有找到匹配的图文</h2>
-        <p>换一个关键词，或清除年份筛选后再试。</p>
+        <p>换一个关键词，或调整品类和年份后再试。</p>
       </section>
     </main>
 
@@ -155,6 +167,7 @@
 
     <script src="data/items.js"></script>
     <script src="data/curated-official.js"></script>
+    <script src="album-categories.js"></script>
     <script src="app.js"></script>
     <script src="intro.js"></script>
     <script src="site-stamp.js"></script>

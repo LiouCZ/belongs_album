@@ -4,6 +4,8 @@ const state = {
   filtered: [],
   query: "",
   collection: "all",
+  category: "all",
+  categories: [],
   year: "all",
   page: 1,
   pageSize: 20,
@@ -19,6 +21,7 @@ const els = {
   visibleCount: document.querySelector("#visibleCount"),
   searchInput: document.querySelector("#searchInput"),
   pageSizeSelect: document.querySelector("#pageSizeSelect"),
+  categorySelect: document.querySelector("#categorySelect"),
   collectionFilter: document.querySelector("#collectionFilter"),
   yearFilter: document.querySelector("#yearFilter"),
   playerAlbum: document.querySelector("#playerAlbum"),
@@ -145,13 +148,15 @@ function excerpt(text, maxLength = 110) {
 
 function renderYearFilter(years) {
   if (!els.yearFilter) return;
-  const options = ["all", ...years];
-  els.yearFilter.innerHTML = options
+  const options = ["all", ...years]
     .map((year) => {
-      const label = year === "all" ? "全部" : year;
-      return `<button class="chip ${year === state.year ? "is-active" : ""}" type="button" data-year="${year}">${label}</button>`;
+      const label = year === "all" ? "全部年份" : `${year} 年`;
+      return `<option value="${escapeHtml(year)}">${escapeHtml(label)}</option>`;
     })
     .join("");
+  els.yearFilter.querySelectorAll("option").forEach((option) => option.remove());
+  els.yearFilter.insertAdjacentHTML("beforeend", options);
+  els.yearFilter.value = state.year;
 }
 
 function renderCollectionFilter(collections) {
@@ -163,6 +168,24 @@ function renderCollectionFilter(collections) {
       return `<button class="chip ${collection === state.collection ? "is-active" : ""}" type="button" data-collection="${escapeHtml(collection)}" aria-pressed="${collection === state.collection}">${escapeHtml(label)}</button>`;
     })
     .join("");
+}
+
+function renderCategoryFilter(groups) {
+  if (!els.categorySelect) return;
+  const counts = new Map();
+  for (const group of groups) {
+    for (const category of group.categories) counts.set(category, (counts.get(category) || 0) + 1);
+  }
+  const option = (value, label, count, disabled = false) =>
+    `<option value="${escapeHtml(value)}"${disabled ? " disabled" : ""}><span class="select-option-label">${escapeHtml(label)}</span> <span class="select-option-count">${count} 组</span></option>`;
+  const options = option("all", "全部品类", groups.length) + state.categories.map((category) => {
+    const count = counts.get(category) || 0;
+    return option(category, category, count, count === 0 && category !== state.category);
+  }).join("");
+  // Keep the native select button and its keyboard focus while counts refresh.
+  els.categorySelect.querySelectorAll("option").forEach((option) => option.remove());
+  els.categorySelect.insertAdjacentHTML("beforeend", options);
+  els.categorySelect.value = state.category;
 }
 
 function renderCollectionSpotlight() {
@@ -331,12 +354,14 @@ function renderPagination() {
 
 function applyFilters() {
   const query = normalize(state.query);
-  state.filtered = state.groups.filter((item) => {
+  const matching = state.groups.filter((item) => {
     const collectionMatches = state.collection === "all" || item.collection === state.collection;
     const yearMatches = state.year === "all" || item.years.includes(state.year);
     const queryMatches = !query || searchableText(item).includes(query);
     return collectionMatches && yearMatches && queryMatches;
   });
+  renderCategoryFilter(matching);
+  state.filtered = matching.filter((item) => state.category === "all" || item.categories.includes(state.category));
   state.page = Math.min(Math.max(1, state.page), totalPages());
 
   els.visibleCount.textContent = state.filtered.length;
@@ -345,7 +370,6 @@ function applyFilters() {
   els.emptyState.hidden = state.filtered.length > 0;
   renderCollectionFilter([...new Set(state.items.map((item) => item.collection || "未分类"))].sort());
   renderCollectionSpotlight();
-  renderYearFilter([...new Set(state.items.map((item) => item.year))].sort());
   renderPagination();
   renderCards(pageItems());
 }
@@ -359,7 +383,8 @@ function buildSummary() {
   }
   const yearLabel = state.year === "all" ? "全部年份" : `${state.year} 年`;
   const scopeLabel = collectionLabel ? `${collectionLabel} · ` : "";
-  return `${scopeLabel}${yearLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
+  const categoryLabel = state.category === "all" ? "" : ` · ${state.category}`;
+  return `${scopeLabel}${yearLabel}${categoryLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
 }
 
 function sourceRange(group) {
@@ -602,6 +627,14 @@ function bindEvents() {
     applyFilters();
   });
 
+  if (els.categorySelect) {
+    els.categorySelect.addEventListener("change", (event) => {
+      state.category = event.target.value;
+      state.page = 1;
+      applyFilters();
+    });
+  }
+
   if (els.collectionFilter) {
     els.collectionFilter.addEventListener("click", (event) => {
       const button = event.target.closest("[data-collection]");
@@ -613,10 +646,8 @@ function bindEvents() {
   }
 
   if (els.yearFilter) {
-    els.yearFilter.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-year]");
-      if (!button) return;
-      state.year = button.dataset.year;
+    els.yearFilter.addEventListener("change", (event) => {
+      state.year = event.target.value;
       state.page = 1;
       applyFilters();
     });
@@ -686,6 +717,14 @@ async function init() {
   state.articles = new Map((curated?.articles || []).map((article) => [article.id, article]));
   const groups = createGroups(state.items);
   state.groups = els.playerAlbum ? groups : sortOfficialGroups(groups);
+  if (els.categorySelect) {
+    state.groups = state.groups.map((group) => ({ ...group, categories: window.BELONGS_CATEGORIES.forGroup(group) }));
+    const counts = new Map();
+    for (const group of state.groups) {
+      for (const category of group.categories) counts.set(category, (counts.get(category) || 0) + 1);
+    }
+    state.categories = [...counts.keys()].sort((a, b) => (a === "其他图文") - (b === "其他图文") || counts.get(b) - counts.get(a) || a.localeCompare(b, "zh-CN"));
+  }
   state.filtered = state.items;
   const collections = [...new Set(state.groups.map((group) => group.collection))];
   if (els.playerAlbum && collections.length === 1) state.collection = collections[0];
@@ -695,6 +734,7 @@ async function init() {
     els.searchInput.value = query;
   }
   if (els.viewSwitch) setView(new URLSearchParams(window.location.search).get("view"));
+  renderYearFilter([...new Set(state.items.map((item) => item.year))].sort());
   renderDiscovery();
   applyFilters();
 }

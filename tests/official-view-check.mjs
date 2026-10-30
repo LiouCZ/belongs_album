@@ -24,6 +24,11 @@ async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
   try {
     const home = await openHome(browser);
+    const yearSelect = home.getByRole("combobox", { name: "年份筛选" });
+    assert.equal(await yearSelect.count(), 1, "year filter should be a dropdown");
+    assert.equal(await yearSelect.inputValue(), "all");
+    assert.deepEqual(await yearSelect.locator("option").evaluateAll((options) => options.map((option) => option.value)),
+      ["all", "2021", "2022", "2023", "2024", "2025", "2026"]);
     assert.equal(await home.locator("#viewSwitch").isVisible(), true);
     assert.equal(await home.locator("#viewSwitch [data-view='grid']").getAttribute("aria-pressed"), "true");
     assert.equal(await home.locator(".gallery .card-list").count(), 0);
@@ -46,17 +51,19 @@ async function run() {
     assert.equal(await home.locator("#introDialog").isVisible(), false);
     assert.equal(await home.locator(".gallery .card-list").count(), 20);
 
-    await home.locator("#yearFilter [data-year='2021']").click();
+    await yearSelect.selectOption("2021");
     await home.locator("#pageSizeSelect").selectOption("25");
     assert.equal(await home.locator(".gallery .card-list").count(), 25);
     const pageOneId = await home.locator(".gallery .card").first().getAttribute("data-id");
     await home.locator("#nextPage").click();
     assert.notEqual(await home.locator(".gallery .card").first().getAttribute("data-id"), pageOneId);
+    assert.equal(await yearSelect.inputValue(), "2021");
 
     await home.locator("#viewSwitch [data-view='grid']").click();
     assert.equal(new URL(home.url()).searchParams.has("view"), false);
     assert.equal(await home.locator(".gallery .card-list").count(), 0);
     assert.equal(await home.locator(".gallery .card").count(), 25);
+    assert.equal(await yearSelect.inputValue(), "2021");
     assert.match(await home.locator("#pageInfo").textContent(), /第 2 \/ /);
     await home.goBack();
     assert.equal(await home.locator("#viewSwitch [data-view='list']").getAttribute("aria-pressed"), "true");
@@ -72,6 +79,20 @@ async function run() {
 
     for (const width of [320, 390, 1440]) {
       const page = await openHome(browser, "?view=list", { width, height: 844 });
+      const year = page.getByRole("combobox", { name: "年份筛选" });
+      await page.locator("#nextPage").click();
+      if (await page.evaluate(() => CSS.supports("appearance", "base-select"))) {
+        await year.click();
+        await year.locator('option[value="2026"]').click();
+        assert.equal(await year.evaluate((select) => select.matches(":open")), false);
+        assert.equal(await page.evaluate(() => document.activeElement.id), "yearFilter");
+      } else {
+        await year.selectOption("2026");
+      }
+      assert.equal(await year.inputValue(), "2026");
+      assert.match(await page.locator("#pageInfo").textContent(), /第 1 \/ /);
+      assert.equal(await page.evaluate(() => state.filtered.length > 0 && state.filtered.every((group) => group.years.includes("2026"))), true);
+      await year.selectOption("all");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       assert.equal(await page.locator(".gallery .card-list").count(), 20);
       if (width <= 390) assert.ok((await page.locator(".gallery img").first().boundingBox()).y < 600);

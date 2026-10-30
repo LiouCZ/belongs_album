@@ -59,7 +59,7 @@ async function run() {
         await page.locator("#detailDialog").evaluate((dialog) => dialog.close());
       }
       await page.locator("#searchInput").fill("");
-      await page.locator('#yearFilter [data-year="2026"]').click();
+      await page.getByRole("combobox", { name: "年份筛选" }).selectOption("2026");
       await page.locator("#pageSizeSelect").selectOption("100");
       const expectedDates = [
         ...Array(13).fill("2026年7月10日"),
@@ -86,7 +86,7 @@ async function run() {
         const september = dates.findIndex((text) => text.includes("2026年9月11日"));
         assert.ok(june >= 0 && june < july && july < september);
       }
-      await page.locator('#yearFilter [data-year="2021"]').click();
+      await page.getByRole("combobox", { name: "年份筛选" }).selectOption("2021");
       assert.match(await page.locator(".gallery .card .meta").first().textContent(), /2021年4月16日/);
       await page.close();
     }
