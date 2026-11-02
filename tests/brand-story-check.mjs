@@ -19,6 +19,48 @@ const expected = [
 ];
 const themes = ["手作与原创", "自然与复古美学", "形与象征", "时间与情感"];
 
+async function assertImageFrames(page) {
+  const standaloneImages = await page.locator(".brand-illustration img, .philosophy-chapter img").evaluateAll((images) =>
+    images.map((image) => {
+      const style = getComputedStyle(image);
+      return {
+        radius: style.borderRadius,
+        outline: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        outlineOffset: style.outlineOffset,
+        outlineColor: style.outlineColor,
+        borderWidth: style.borderTopWidth,
+      };
+    }));
+  assert.equal(standaloneImages.length, 5);
+  for (const image of standaloneImages) {
+    assert.equal(image.radius, "8px", "standalone story images should have soft corners");
+    assert.equal(image.outline, "solid", "standalone story images need a subtle frame");
+    assert.equal(image.outlineWidth, "1px");
+    assert.equal(image.outlineOffset, "-1px", "image frames should stay inside the original image bounds");
+    assert.equal(image.outlineColor, "rgba(244, 241, 234, 0.35)");
+    assert.equal(image.borderWidth, "0px", "frames must not shrink the photograph or change its layout");
+  }
+  const cards = await page.locator(".story-feature, .story-entry, .story-card").evaluateAll((elements) =>
+    elements.map((element) => {
+      const style = getComputedStyle(element);
+      return { radius: style.borderRadius, overflow: style.overflow, background: style.backgroundColor, border: style.borderTopWidth };
+    }));
+  assert.ok(cards.length > 0);
+  for (const card of cards) {
+    assert.equal(card.radius, "8px", "story cards should share the album corner treatment");
+    assert.equal(card.overflow, "hidden", "card images must follow the rounded outer frame");
+    assert.equal(card.border, "1px", "retain the existing card border");
+    assert.equal(card.background, "rgb(244, 241, 234)", "retain the original paper-colored cards");
+  }
+  assert.equal(await page.locator("body").evaluate((body) => getComputedStyle(body).backgroundColor), "rgb(95, 105, 107)");
+  assert.equal(await page.locator(".story-feature-image img, .story-entry-media img, .story-media img, .brand-logo").evaluateAll((images) =>
+    images.every((image) => {
+      const style = getComputedStyle(image);
+      return style.borderTopWidth === "0px" && style.outlineStyle === "none";
+    })), true, "card photos and the transparent logo should not get a second frame");
+}
+
 async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
   try {
@@ -33,6 +75,7 @@ async function run() {
       const page = await browser.newPage({ viewport });
       await page.goto(`file://${path.join(root, "brand-story.html")}`);
       assert.equal(await page.locator("h1").textContent(), "品牌故事");
+      await assertImageFrames(page);
       const philosophy = page.getByRole("region", { name: "创作理念" });
       assert.equal(await philosophy.locator(".philosophy-chapter").count(), themes.length);
       const illustration = philosophy.locator(".brand-illustration");
@@ -109,6 +152,7 @@ async function run() {
         }), true);
       }
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      console.log(`PASS brand story frames and interactions ${viewport.width}px`);
       await page.close();
     }
   } finally {

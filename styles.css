@@ -1718,6 +1718,13 @@ body.view-list-page {
   height: auto;
 }
 
+.brand-illustration img,
+.philosophy-chapter img {
+  border-radius: 8px;
+  outline: 1px solid rgba(244, 241, 234, 0.35);
+  outline-offset: -1px;
+}
+
 .philosophy-chapter {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 44%);
@@ -1951,7 +1958,9 @@ body.view-list-page {
   display: grid;
   min-width: 0;
   border: 1px solid var(--line);
+  border-radius: 8px;
   background: var(--paper);
+  overflow: hidden;
 }
 
 .story-feature {
@@ -2307,6 +2316,7 @@ body.view-list-page {
   min-width: 0;
   flex-direction: column;
   border: 1px solid var(--line);
+  border-radius: 8px;
   background: var(--paper);
   color: var(--ink);
   text-decoration: none;
