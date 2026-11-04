@@ -36,6 +36,8 @@ async function run() {
     await assertCustomRulesPageLinkAndContent(browser);
     await assertDesktopExportCapturesWithoutCssZoom(browser);
     await assertExportUsesReadableTextareaSnapshots(browser);
+    await assertFailedExportRestoresFields(browser);
+    await assertInformationExportIsReadable(browser);
     await assertRealPngDownloads(browser);
   } finally {
     await browser.close();
@@ -124,6 +126,8 @@ async function assertExportUsesReadableTextareaSnapshots(browser) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
   await page.goto(pageUrl);
   await fillVipForm(page);
+  const nickname = "喜欢手工银饰的玩家与日常记录".repeat(4);
+  await page.getByPlaceholder("您的微信昵称").fill(nickname);
 
   const exportButton = page.getByRole("button", { name: "导出整页图片" });
   await expectVisible(exportButton);
@@ -134,6 +138,9 @@ async function assertExportUsesReadableTextareaSnapshots(browser) {
         actionDisplay: getComputedStyle(document.querySelector(".action-row")).display,
         isExporting: document.body.classList.contains("is-exporting"),
         snapshots: [...target.querySelectorAll(".export-textarea-snapshot")].map((item) => item.textContent),
+        inputSnapshots: [...target.querySelectorAll(".export-input-snapshot")].map((item) => item.textContent),
+        fieldsFit: [...target.querySelectorAll(".export-input-snapshot")].every((item) =>
+          item.scrollWidth <= item.clientWidth + 1 && item.scrollHeight <= item.clientHeight + 1),
       };
       return { toDataURL: () => png };
     };
@@ -145,6 +152,9 @@ async function assertExportUsesReadableTextareaSnapshots(browser) {
   const check = await page.evaluate(() => window.__exportCheck);
   assert.equal(check.isExporting, true, "body should be in export mode while capturing");
   assert.equal(check.actionDisplay, "none", "operation buttons should be hidden while capturing");
+  assert.deepEqual(check.inputSnapshots, ["测试用户", nickname, "您的微信号", "方便电话联系"],
+    "input snapshots must include full values and preserve the empty-field hints");
+  assert.equal(check.fieldsFit, true, "long nicknames must wrap instead of clipping");
   assert.ok(
     check.snapshots.some((text) => text.includes("希望做一件适合日常佩戴的定制作品。")),
     "export should convert filled textareas to readable text snapshots",
@@ -154,6 +164,25 @@ async function assertExportUsesReadableTextareaSnapshots(browser) {
     "export should include the generated registration text snapshot",
   );
 
+  await page.close();
+}
+
+async function assertFailedExportRestoresFields(browser) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.goto(pageUrl);
+  await fillVipForm(page);
+  await page.evaluate(() => {
+    window.html2canvas = async () => { throw new Error("Simulated rendering failure"); };
+  });
+  const button = page.getByRole("button", { name: "导出整页图片" });
+  await button.click();
+  await page.waitForFunction(() => document.querySelector("#copyStatus").textContent === "图片生成失败，请稍后重试");
+  assert.equal(await page.getByPlaceholder("怎么称呼您").inputValue(), "测试用户");
+  assert.equal(await page.getByPlaceholder("怎么称呼您").isVisible(), true);
+  assert.equal(await page.getByPlaceholder(/例如：想做一条蛇骨链吊坠/).inputValue(), "希望做一件适合日常佩戴的定制作品。");
+  assert.equal(await page.getByPlaceholder(/例如：想做一条蛇骨链吊坠/).isVisible(), true);
+  assert.equal(await page.locator(".export-input-snapshot, .export-textarea-snapshot, .export-field-source").count(), 0);
+  assert.equal(await button.isEnabled(), true);
   await page.close();
 }
 
@@ -185,6 +214,74 @@ async function assertRealPngDownloads(browser) {
   assert.deepEqual(errors, []);
 
   await page.close();
+}
+
+async function assertInformationExportIsReadable(browser) {
+  for (const width of [1440, 390, 320]) {
+    const page = await browser.newPage({ viewport: { width, height: 1000 }, deviceScaleFactor: 2 });
+    await page.goto(pageUrl);
+    const values = ["Test user", "Belongs", "belongs_player", "13800138000"];
+    await page.locator(".field-grid input").evaluateAll((nodes, values) => {
+      nodes.forEach((node, index) => { node.value = values[index]; });
+    }, values);
+    await page.evaluate(() => {
+      const render = window.html2canvas;
+      window.html2canvas = async (target, options) => {
+        const origin = target.getBoundingClientRect();
+        const grid = target.querySelector(".field-grid");
+        const gap = grid.nextElementSibling.getBoundingClientRect().top - grid.getBoundingClientRect().bottom;
+        const fields = [...grid.querySelectorAll("label")].map((label) =>
+          (label.querySelector(".export-input-snapshot") || label.querySelector("input")).getBoundingClientRect());
+        const canvas = await render(target, options);
+        const context = canvas.getContext("2d");
+        const scale = canvas.width / origin.width;
+        const issues = gap < 20 ? [`VIP group gap is only ${gap}px`] : [];
+        for (const [index, field] of fields.entries()) {
+          const x = Math.round((field.left - origin.left + 4) * scale);
+          const y = Math.round((field.top - origin.top + 2) * scale);
+          const w = Math.floor((field.width - 8) * scale);
+          const h = Math.floor((field.height - 4) * scale);
+          const { data } = context.getImageData(x, y, w, h);
+          const background = [10, 24, 38].map((row) => {
+            const offset = (Math.floor((row - 2) * scale) * w + Math.floor(w * 0.8)) * 4;
+            return [...data.slice(offset, offset + 3)];
+          });
+          if (background.some((sample) => sample.some((channel, offset) => Math.abs(channel - background[0][offset]) > 3))) {
+            issues.push(`field ${index} has shadow bands in the PNG`);
+          }
+          const rows = [];
+          for (let row = 0; row < h; row += 1) {
+            for (let column = 0; column < w; column += 1) {
+              const offset = (row * w + column) * 4;
+              if (data[offset + 3] > 200 && Math.max(data[offset], data[offset + 1], data[offset + 2]) < 150) {
+                rows.push(row);
+                break;
+              }
+            }
+          }
+          if (!rows.length) issues.push(`field ${index} text is missing from the PNG`);
+          else {
+            const top = rows[0] / scale + 2;
+            const bottom = field.height - (rows.at(-1) / scale + 2);
+            if (top < 8 || bottom < 8 || Math.abs(top - bottom) > 9) {
+              issues.push(`field ${index} text is not centered: ${top}px above, ${bottom}px below`);
+            }
+          }
+        }
+        window.__informationExportIssues = issues;
+        return canvas;
+      };
+    });
+    const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "导出整页图片" }).click()]);
+    await download.saveAs(path.join(outputDir, `vip-information-${width}.png`));
+    assert.deepEqual(await page.evaluate(() => window.__informationExportIssues), [], `${width}px exported information section`);
+    assert.deepEqual(await page.locator(".field-grid input").evaluateAll((nodes) => nodes.map((node) => node.value)), values,
+      "export must not alter personal information");
+    assert.equal(await page.locator(".field-grid input").first().isVisible(), true, "inputs must be restored after export");
+    assert.equal(await page.locator(".export-input-snapshot, .export-textarea-snapshot").count(), 0, "temporary snapshots must be removed");
+    console.log(`PASS VIP information PNG text alignment and group spacing ${width}px`);
+    await page.close();
+  }
 }
 
 async function expectVisible(locator) {

@@ -65,20 +65,22 @@ function nextFrame() {
   });
 }
 
-function createTextareaSnapshots() {
-  const pairs = [...form.querySelectorAll("textarea")].map((textarea) => {
+function createFieldSnapshots() {
+  const pairs = [...form.querySelectorAll(".field-grid input, textarea")].map((field) => {
+    const isInput = field instanceof HTMLInputElement;
     const snapshot = document.createElement("div");
-    snapshot.className = "export-textarea-snapshot";
-    snapshot.textContent = textarea.value || "";
-    snapshot.style.minHeight = `${textarea.offsetHeight}px`;
-    textarea.classList.add("export-textarea-source");
-    textarea.after(snapshot);
-    return { textarea, snapshot };
+    snapshot.className = isInput ? "export-input-snapshot" : "export-textarea-snapshot";
+    snapshot.textContent = field.value || (isInput ? field.placeholder : "");
+    snapshot.classList.toggle("is-placeholder", isInput && !field.value);
+    snapshot.style.minHeight = `${field.offsetHeight}px`;
+    field.classList.add("export-field-source");
+    field.after(snapshot);
+    return { field, snapshot };
   });
 
   return () => {
-    for (const { textarea, snapshot } of pairs) {
-      textarea.classList.remove("export-textarea-source");
+    for (const { field, snapshot } of pairs) {
+      field.classList.remove("export-field-source");
       snapshot.remove();
     }
   };
@@ -124,7 +126,7 @@ async function exportImage() {
   copyStatus.textContent = "正在生成图片...";
   copyButton.disabled = true;
   exportButton.disabled = true;
-  const restoreTextareaSnapshots = createTextareaSnapshots();
+  const restoreFieldSnapshots = createFieldSnapshots();
   document.body.classList.add("is-exporting");
   await document.fonts?.ready;
   await nextFrame();
@@ -151,7 +153,7 @@ async function exportImage() {
     copyStatus.textContent = "图片生成失败，请稍后重试";
   } finally {
     document.body.classList.remove("is-exporting");
-    restoreTextareaSnapshots();
+    restoreFieldSnapshots();
     copyButton.disabled = false;
     exportButton.disabled = false;
   }

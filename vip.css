@@ -251,6 +251,10 @@ legend em,
   margin-top: 20px;
 }
 
+.field-grid + .choice-group {
+  margin-top: 24px;
+}
+
 .choice-group legend {
   display: flex;
   align-items: center;
@@ -323,6 +327,7 @@ legend em,
   line-height: 1.6;
 }
 
+.export-input-snapshot,
 .export-textarea-snapshot {
   display: none;
   width: 100%;
@@ -335,6 +340,16 @@ legend em,
   padding: 14px 16px;
   white-space: pre-wrap;
   line-height: 1.6;
+}
+
+.export-input-snapshot {
+  padding: 11px 16px;
+  line-height: 24px;
+}
+
+.export-input-snapshot.is-placeholder {
+  color: #beb8ad;
+  font-weight: 400;
 }
 
 .notice {
@@ -619,12 +634,20 @@ body.is-exporting .copy-status {
   }
 }
 
-body.is-exporting textarea.export-textarea-source {
+body.is-exporting .export-field-source {
   display: none;
 }
 
+body.is-exporting .export-input-snapshot,
 body.is-exporting .export-textarea-snapshot {
   display: block;
+}
+
+body.is-exporting .form-card,
+body.is-exporting .pills span,
+body.is-exporting .export-input-snapshot,
+body.is-exporting .export-textarea-snapshot {
+  box-shadow: none;
 }
 
 .sr-only {
