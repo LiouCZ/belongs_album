@@ -146,6 +146,17 @@ function excerpt(text, maxLength = 110) {
   return cleaned.length > maxLength ? `${cleaned.slice(0, maxLength).trim()}...` : cleaned;
 }
 
+function workCopy(group) {
+  const item = group.items?.[0] || group;
+  const title = els.playerAlbum ? { heading: group.title, description: "" } : window.BelongsReading.title(group.title, {
+    id: item.workId || item.id, caption: group.caption,
+  });
+  return {
+    title: title.heading,
+    caption: [title.description, group.caption].filter(Boolean).join("\n\n"),
+  };
+}
+
 function renderYearFilter(years) {
   if (!els.yearFilter) return;
   const options = ["all", ...years]
@@ -217,25 +228,30 @@ function renderCards(items) {
     return;
   }
   if (els.viewSwitch && state.view === "list") {
-    els.gallery.innerHTML = items.map((item) => `
+    els.gallery.innerHTML = items.map((item) => {
+      const copy = workCopy(item);
+      return `
       <article class="card card-list ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
         <div class="thumb"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" /></div>
         <div class="card-body">
           <p class="meta">${escapeHtml(item.date)}</p>
           <div class="list-details">
             <span class="list-count">${escapeHtml(item.year)} · ${item.imageCount} 张</span>
-            <h3>${escapeHtml(item.title)}</h3>
-            <p class="excerpt">${escapeHtml(excerpt(item.caption))}</p>
+            <h3>${window.BelongsReading.headingHtml(copy.title)}</h3>
+            <p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>
           </div>
           <svg class="list-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
         </div>
       </article>
-    `).join("");
+    `;
+    }).join("");
     return;
   }
   els.gallery.innerHTML = items
     .map(
-      (item) => `
+      (item) => {
+        const copy = workCopy(item);
+        return `
         <article class="card ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
           <div class="thumb">
             <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
@@ -243,11 +259,12 @@ function renderCards(items) {
           </div>
           <div class="card-body">
             <p class="meta">${escapeHtml(item.date)} · ${escapeHtml(item.year)}</p>
-            <h3>${escapeHtml(item.title)}</h3>
-            <p class="excerpt">${escapeHtml(excerpt(item.caption))}</p>
+            <h3>${window.BelongsReading.headingHtml(copy.title)}</h3>
+            <p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>
           </div>
         </article>
-      `
+      `;
+      }
     )
     .join("");
 }
@@ -300,7 +317,7 @@ function renderDiscovery() {
   state.lastDiscoveryId = daily.id;
   els.dailyPick.dataset.discoveryId = daily.id;
   els.dailyPick.setAttribute("aria-label", `查看今日一件：${daily.title}`);
-  els.dailyPick.innerHTML = `<img src="${escapeHtml(daily.thumb)}" alt="" width="${daily.thumbWidth}" height="${daily.thumbHeight}" /><span><strong>${escapeHtml(daily.title)}</strong><small>${escapeHtml(daily.date)}</small></span>`;
+  els.dailyPick.innerHTML = `<img src="${escapeHtml(daily.thumb)}" alt="" width="${daily.thumbWidth}" height="${daily.thumbHeight}" /><span><strong>${escapeHtml(workCopy(daily).title)}</strong><small>${escapeHtml(daily.date)}</small></span>`;
 
   const past = dated.filter((entry) => entry.year < now.getFullYear());
   const month = now.getMonth() + 1;
@@ -320,7 +337,7 @@ function renderDiscovery() {
   els.timeTrace.innerHTML = trace.map(({ group }) => `
     <button type="button" class="discovery-trace-item" data-discovery-id="${escapeHtml(group.id)}" title="查看${escapeHtml(group.title)}" aria-label="查看${escapeHtml(group.title)}">
       <img src="${escapeHtml(group.thumb)}" alt="" width="${group.thumbWidth}" height="${group.thumbHeight}" />
-      <span><strong>${escapeHtml(group.title)}</strong><small>${escapeHtml(group.date)}</small></span>
+      <span><strong>${escapeHtml(workCopy(group).title)}</strong><small>${escapeHtml(group.date)}</small></span>
     </button>
   `).join("");
 }
@@ -410,44 +427,27 @@ function moveDetailImage(delta) {
   renderDetailImage();
 }
 
-function detailParagraphs(text) {
-  return text.split(/(\r?\n(?:[ \t]*\r?\n)+)/).map((part, index) =>
-    index % 2 === 0 && part ? `<p class="detail-paragraph">${escapeHtml(part)}</p>` : escapeHtml(part)
-  ).join("");
-}
-
 function renderDetailCaption(group) {
-  const caption = group.caption || (els.playerAlbum ? "" : "无文字说明");
+  const copy = workCopy(group);
+  const caption = copy.caption || (els.playerAlbum ? "" : "无文字说明");
   const article = state.articles.get(group.articleId);
   const work = article?.works.find((candidate) => candidate.id === group.items[0].workId);
-  const theme = work && article.theme?.text?.trim();
-  const suffix = theme && caption.endsWith(`\n\n${theme}`) ? `\n\n${theme}` : "";
-  const description = suffix ? caption.slice(0, -suffix.length) : caption;
-  let content = detailParagraphs(description);
-
-  // Only verified article descriptions have a predictable trailing specification block.
-  if (work?.description.trim() === description) {
-    const lines = description.split("\n");
-    const isSpecification = (line) => /^(搭配|规格|材质)[：:]/.test(line);
-    const start = lines.findIndex(isSpecification);
-    if (start > 0 && lines.slice(start).every(isSpecification)) {
-      const specifications = lines.slice(start).map((line) => {
-        const separator = line.search(/[：:]/) + 1;
-        return `<div class="detail-spec-row"><dt>${escapeHtml(line.slice(0, separator))}</dt><dd>${escapeHtml(line.slice(separator))}</dd></div>`;
-      }).join("\n");
-      content = `${detailParagraphs(lines.slice(0, start).join("\n"))}\n<dl class="detail-specs">${specifications}</dl>`;
-    }
-  }
-
-  els.detailCaption.innerHTML = content + (suffix ? `\n\n<p class="detail-theme">${escapeHtml(theme)}</p>` : "");
-  els.detailCaption.hidden = Boolean(els.playerAlbum && !group.caption);
+  const result = window.BelongsReading.format(caption, {
+    id: group.items[0].workId || group.items[0].id,
+    theme: work ? article.theme?.text?.trim() : "",
+    trustedSpecs: Boolean(work),
+  });
+  els.detailCaption.innerHTML = result.html;
+  els.detailCaption.hidden = Boolean(els.playerAlbum && !copy.caption);
+  els.dialog.classList.toggle("detail--long", result.long);
 }
 
 function openDetail(group) {
   state.activeGroup = group;
   state.activeImageIndex = 0;
   renderDetailImage();
-  els.detailTitle.textContent = group.title;
+  els.detailTitle.innerHTML = window.BelongsReading.headingHtml(workCopy(group).title);
+  els.detailTitle.classList.toggle("reading-title--long", workCopy(group).title.length > 32);
   if (els.playerAlbum) {
     els.detailMeta.textContent = group.collection;
     els.detailIndex.textContent = `第 ${String(group.index).padStart(2, "0")} 组 · ${group.imageCount} 张图片`;
@@ -476,7 +476,7 @@ function openArticle(articleId) {
         `).join("")}</div>
         <figcaption>
           <span class="article-work-number">${String(index + 1).padStart(2, "0")}</span>
-          <div><h3>${escapeHtml(work.title)}</h3><p>${escapeHtml(work.description)}</p></div>
+          <div><h3>${escapeHtml(work.title)}</h3><div class="reading-copy">${window.BelongsReading.format(work.description, { id: work.id, trustedSpecs: true }).html}</div></div>
         </figcaption>
       </figure>
     `).join("")}</div>

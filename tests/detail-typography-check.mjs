@@ -38,8 +38,12 @@ async function checkOfficial(browser, width) {
       const work = article.works[index];
       await page.locator("#gallery .card").nth(index).click();
       const caption = page.locator("#detailCaption");
-      assert.equal(await caption.locator(".detail-specs dt").count(), 3, "verified work specifications should have their own aligned section");
-      assert.deepEqual(await caption.locator(".detail-specs dt").allTextContents(), ["搭配：", "规格：", "材质："]);
+      assert.equal(await caption.locator(".detail-specs").count(), 1, "type, motifs and specifications share one aligned section");
+      assert.equal(await caption.locator(".detail-specs dt").count(), 5);
+      assert.deepEqual(await caption.locator(".detail-specs dt").evaluateAll((nodes) => nodes.map((node) => node.dataset.label || node.textContent)),
+        ["制作类型：", "元素：", "搭配：", "规格：", "材质："]);
+      assert.equal(await caption.locator('dt[data-label="制作类型："]').evaluate((node) => getComputedStyle(node, "::before").content), '"制作类型："');
+      assert.equal(await caption.locator('dt[data-label="元素："]').evaluate((node) => getComputedStyle(node, "::before").content), '"元素："');
       assert.equal(await caption.textContent(), `${work.description.trim()}\n\n${article.theme.text}`,
         "formatting must preserve every source character, line break and theme");
       assert.equal(await caption.locator(".detail-theme").textContent(), article.theme.text);
@@ -55,6 +59,15 @@ async function checkOfficial(browser, width) {
       await page.locator("#closeDialog").click();
     }
   }
+
+  await page.evaluate(() => openArticle(window.BELONGS_CURATED.articles[0].id));
+  const articleLabels = page.locator('#articleDialog dt[data-label="制作类型："]');
+  assert.ok(await articleLabels.count() > 0, "full article view must share manufacturing labels");
+  assert.equal(await articleLabels.evaluateAll((nodes) => nodes.every((node) => {
+    const style = getComputedStyle(node);
+    return node.scrollWidth <= node.clientWidth + 1 && node.getBoundingClientRect().height <= parseFloat(style.lineHeight) + 1;
+  })), true, "four-character labels should fit on one line in the article view");
+  await page.locator("#articleDialog").evaluate((dialog) => dialog.close());
 
   await page.evaluate(() => {
     const group = state.groups.find((candidate) => !candidate.articleId && candidate.caption);

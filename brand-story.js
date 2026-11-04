@@ -160,10 +160,9 @@ function openSource(story) {
   const fragment = document.createDocumentFragment();
   for (const section of story.sourceSections) {
     const article = element("section", "story-source-section");
-    article.append(
-      element("h3", "", section.label),
-      element("p", "", section.text),
-    );
+    const copy = element("div", "reading-copy");
+    copy.innerHTML = window.BelongsReading.format(section.text, { id: story.id }).html;
+    article.append(element("h3", "", section.label), copy);
     fragment.append(article);
   }
   els.sourceBody.replaceChildren(fragment);

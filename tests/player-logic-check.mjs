@@ -19,6 +19,7 @@ const nodes = new Map(ids.map((id) => [id, {
   hidden: false,
   value: "",
   handlers: {},
+  classList: { toggle() {} },
   addEventListener(type, handler) { this.handlers[type] = handler; },
   showModal() { this.open = true; },
   close() { this.open = false; },
@@ -31,6 +32,7 @@ const context = vm.createContext({
 });
 
 vm.runInContext(readFileSync(path.join(root, "data/player-items.js"), "utf8"), context);
+vm.runInContext(readFileSync(path.join(root, "reading-layout.js"), "utf8"), context);
 vm.runInContext(readFileSync(path.join(root, "app.js"), "utf8"), context);
 
 const node = (id) => nodes.get(id);

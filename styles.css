@@ -1435,7 +1435,7 @@ body.view-list-page {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
   min-height: 620px;
 }
 
@@ -1459,6 +1459,10 @@ body.view-list-page {
 }
 
 @media (min-width: 861px) {
+  .detail--long .detail-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr);
+  }
+
   .detail-grid {
     grid-template-rows: minmax(0, 1fr);
     min-height: min(620px, calc(100vh - 38px));
@@ -1565,42 +1569,139 @@ body.view-list-page {
   overflow-wrap: anywhere;
 }
 
-.detail-caption {
-  margin-top: 26px;
+.detail-caption,
+.reading-copy {
+  min-width: 0;
   color: #2f3435;
   font-size: 16px;
   line-height: 1.9;
   overflow-wrap: anywhere;
+  line-break: strict;
+  letter-spacing: 0;
 }
 
-.detail-paragraph,
-.detail-theme {
-  white-space: pre-wrap;
+.detail-caption {
+  margin-top: 26px;
 }
 
-.detail-paragraph + .detail-paragraph {
+.reading-paragraph {
+  margin: 0;
+  white-space: normal;
+}
+
+.reading-description {
+  white-space: pre-line;
+}
+
+.detail h2.reading-title--long {
+  font-size: 21px;
+  line-height: 1.7;
+}
+
+.detail-caption > * + *,
+.reading-copy > * + * {
   margin-top: 16px;
 }
 
-.detail-specs {
+.reading-verse {
+  margin: 0;
+  font-family: "Songti SC", "STSong", "SimSun", serif;
+  font-size: 17px;
+  line-height: 2.05;
+  white-space: pre-wrap;
+}
+
+.reading-heading {
+  margin: 28px 0 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.75;
+}
+
+.reading-heading:first-child {
+  margin-top: 0;
+}
+
+.reading-heading + * {
+  margin-top: 10px;
+}
+
+.reading-item {
   display: grid;
-  gap: 8px;
-  margin: 20px 0 0;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.reading-number {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: calc(30.4 / 12);
+  white-space: pre-wrap;
+}
+
+.reading-item-copy {
+  min-width: 0;
+  margin: 0;
+}
+
+.reading-item-name {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.reading-note {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.85;
+}
+
+.reading-note + .reading-note {
+  margin-top: 8px;
+}
+
+.reading-signature {
+  margin: 26px 0 0;
+  color: var(--muted);
+  font-family: "Songti SC", "STSong", "SimSun", serif;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.reading-title-number {
+  margin-right: 0.45em;
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 0.65em;
+  font-weight: 400;
+  vertical-align: 0.12em;
+}
+
+.reading-specs {
+  display: grid;
+  gap: 9px;
+  margin: 24px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
   font-size: 15px;
   line-height: 1.8;
 }
 
 .detail-spec-row {
   display: grid;
-  grid-template-columns: 3em minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 4.5em minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
 }
 
 .detail-specs dt,
 .detail-specs dd {
   min-width: 0;
   margin: 0;
-  white-space: pre-wrap;
+  white-space: pre-line;
 }
 
 .detail-specs dt {
@@ -1609,11 +1710,20 @@ body.view-list-page {
   line-height: calc(27 / 13);
 }
 
-.detail-theme {
+.detail-specs dt[data-label]::before {
+  content: attr(data-label);
+}
+
+.reading-syntax {
+  display: none;
+}
+
+.reading-theme {
   margin-top: 32px;
   font-family: "Songti SC", "STSong", "SimSun", serif;
   font-size: 17px;
   line-height: 1.9;
+  white-space: pre-wrap;
 }
 
 .curated-card .thumb img {
@@ -1736,13 +1846,17 @@ body.view-list-page {
   font-weight: 500;
 }
 
-.article-work p {
-  margin: 9px 0 0;
-  white-space: pre-line;
-  color: #4b5354;
-  font-size: 13px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
+.article-work .reading-copy {
+  margin-top: 14px;
+  font-size: 15px;
+}
+
+.article-work .reading-specs {
+  font-size: 14px;
+}
+
+.article-work .detail-spec-row {
+  grid-template-columns: 5em minmax(0, 1fr);
 }
 
 .article-theme {
@@ -2402,13 +2516,6 @@ body.view-list-page {
   font-size: 13px;
   font-weight: 500;
   line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-
-.story-source-section p {
-  white-space: pre-wrap;
-  font-size: 15px;
-  line-height: 1.9;
   overflow-wrap: anywhere;
 }
 
