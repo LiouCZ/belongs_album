@@ -105,7 +105,24 @@ async function run() {
     const narrow = await openPage(browser, "index.html", { width: 320, height: 720 });
     await narrow.locator("#siteEggTrigger").click();
     assert.equal(await narrow.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    assert.ok((await narrow.locator("#timeTrace button").first().boundingBox()).width > 170);
+    const traceLayout = await narrow.locator("#timeTrace").evaluate((trace) => ({
+      count: trace.children.length,
+      width: trace.firstElementChild.getBoundingClientRect().width,
+      clientWidth: trace.clientWidth,
+      scrollWidth: trace.scrollWidth,
+    }));
+    if (traceLayout.count === 1) {
+      assert.ok(traceLayout.width > 170, "a single historical work should fill the available row");
+    } else {
+      assert.ok(traceLayout.width >= 90 && traceLayout.width <= 170, "multiple historical works should use the existing compact carousel");
+      if (traceLayout.scrollWidth > traceLayout.clientWidth) {
+        await narrow.locator("#timeTrace").evaluate((trace) => { trace.scrollLeft = trace.scrollWidth; });
+        assert.ok(await narrow.locator("#timeTrace").evaluate((trace) => trace.scrollLeft > 0));
+      } else {
+        assert.ok(await narrow.locator("#timeTrace").evaluate((trace) =>
+          trace.lastElementChild.getBoundingClientRect().right <= trace.getBoundingClientRect().right));
+      }
+    }
     await narrow.close();
   } finally {
     await browser.close();

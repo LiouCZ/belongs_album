@@ -9,7 +9,56 @@
 
 发售规则、二维码、购买方式、售罄通知、联系方式、版权声明不进入作品说明或主题描述。作品自身的设计元素、搭配、规格、材质属于作品说明，可保留。末尾文字需逐行核对：本篇主题记录为“——被温暖环绕——”，而不是前一句“前路漫漫亦灿灿，作品既是艺术亦是态度。”或品牌署名；没有明确主题时用 `null`，不补写。
 
-Schema：`schemas/wechat-article.v1.schema.json`、`schemas/album-entry.v1.schema.json`。`captureStatus: "complete"` 表示**目标内容**（作品截图、对应说明和末尾主题）已核齐，不表示保存了发售全文；对应不清的作品标记 `needs_review`，缺失目标内容的文章标记 `partial`。
+Schema：`schemas/wechat-article.v1.schema.json`、`schemas/album-entry.v1.schema.json`。`captureStatus: "complete"` 表示**目标内容**（作品截图、对应说明和末尾主题）已核齐，不表示保存了发售全文；对应不清的作品标记 `needs_review`，缺失目标内容的文章标记 `partial`。历史记录也使用作品 Schema，`source.kind: "docx"` 仅标记最初出处，不代表生成时还需要读取 Word。
+
+## 统一维护入口
+
+正式源数据在网站仓库旁的 `/Users/loveling/Belongs/album_source/`：
+
+```text
+album_source/
+  articles/<公众号文章 ID>.json
+  entries/<公众号文章 ID>.json
+  entries/legacy-2021.json ... legacy-2026.json
+  assets/2026/...             公众号原图及截图
+  assets/images/2021/...      历史画册大图，保留旧图片 ID
+  assets/thumbs/2021/...      历史画册缩略图
+  backups/legacy-v1/          迁移前的 items.json / items.js
+  migrations/legacy-v1.json   日期、分组及文字变动清单
+  legacy-manifest.json       必须保留的年份文件及旧图片 ID 清单
+```
+
+**以后只编辑这里的 JSON 和图片，不编辑生成的 `data/items.*` / `data/curated-official.*`，也不再运行 `.album_build/build_web_album.py`。** 所有历史图片、缩略图都已独立保存；重建不需要原 Word、迁移前的导出或旧网页数据。`backups/` 是可追溯备份，不是构建输入。
+
+在网站目录运行统一命令：
+
+```bash
+cd /Users/loveling/Belongs/belongs_album
+node scripts/build-official-album.mjs
+```
+
+该命令读取按年历史作品和已校对的公众号作品，检查完整清单、图片哈希与顺序，再生成两个现有浏览器载荷及对应图片。任一年源文件或历史必需图片缺失时中止，先在临时目录完成全部生成和校验，再替换公开文件。网页仍兼容直接双击打开，历史内容不会与公众号新记录重复导入。`--source <源目录> --output <输出目录>` 可用于恢复到空目录或验证备份；输出目录与源目录必须分开。`legacy-manifest.json` 是正式源数据，应与 JSON 和图片一起备份；只有明确新增年份或经用户确认调整必需 ID 时才修改清单，普通文案更新不用改动它。
+
+若修改了品牌故事引用的历史正文，随后运行 `node scripts/build-story-catalog.mjs` 更新故事摘录；同一作品的多个图片 ID 只摘录一次。历史图片 ID、图片路径和原始序号保留，不能随意改名。
+
+网站目录只包含发布产物。**备份时同时保留整个 `album_source/` 和网站仓库**；只推送 GitHub Pages 不会备份站外源记录。源目录中的原文快照、审核备注和迁移清单不复制进公开站点。
+
+旧 Word、PDF 画册和压缩包保留在网站仓库之外，不随 Pages 发布。仓库 `.gitignore` 已排除这些文件及 Office 临时文件，避免后续误加入；它们不是网站运行或重建所需的文件，不必复制到网站目录。
+
+## 历史画册迁移结果
+
+2026-11-04 已完成一次性迁移：原画册的 1011 张图片及缩略图全部保留，生成 718 组历史图文，并与现有公众号文章记录共存。以 Word 中的 213 个明确日期段落核对时间，修复跨年归属、同行日期标题、图片后下一件标题，以及《侘寂之美》《马》《信使》《你好,2022》的已知叙事拆段。另保留 19 组图片之后、下一日期之前的说明，包括《飞越山海》的四件作品、《行万里路》的六件作品和腰带定制尺寸等，正文不会在换日期或文末被丢弃。原导出完整文字在 `backups/legacy-v1/` 中逐字保留，变动逐图片记录在迁移清单。
+
+历史记录保留 `needs_review`：自动核对日期和图片身份，不等于逐件人工确认作品名称与图像。19 组仍无正文，保持空字符串；不凭空补写原文、链接或末尾主题。旧合集有整篇叙事和多件作品合图，按现有可确认的对应关系存储，不假装已拆成独立作品。
+
+历史作品字段与公众号作品一致：`id`、`source`、`date`、`title`、`description`、`images`、`reviewStatus`。历史来源增加以下兼容信息：
+
+- `year`：年份；`date` 无法确认时设为 `null`，仍可按年份检索。本次真实数据的日期均已找到明确出处。
+- `source.articleTitle`、`source.paragraphIndexes`：原 Word 中的文章标题与段落位置，仅供追溯；不是伪造的公众号文章 ID。
+- `images[].thumbnail`：缩略图路径、哈希和实际尺寸。
+- `images[].legacy`：旧年内序号与原始尺寸；`sourceImageIndex` 保留全局图片顺序。
+
+这里的历史“大图”是原网站已导出的图片版本，并非声称恢复了 Word 内的原始分辨率。所有大图和缩略图按字节复制，未重新压缩、裁切或改变色彩。已校对的公众号记录仍须有非空作品说明；允许空说明仅为兼容历史缺失内容。
 
 ## 本篇实录
 
@@ -27,7 +76,7 @@ Schema：`schemas/wechat-article.v1.schema.json`、`schemas/album-entry.v1.schem
 2. 保存作品原图；对多件作品长图按分隔区裁切。逐图目视核对作品形态与说明，保留相同画幅并避开水印、分隔线；不要对银色、氧化和镀金做会改变材质观感的滤镜。
 3. 每件作品建立一条作品记录，截图与对应描述成组保存；附上原图 ID、裁切坐标和文件哈希。规则、二维码及其他发售文案在提取阶段丢弃。
 4. 末尾主题句单独记录在文章 `theme`，明确日期。校验文章和作品记录、文件哈希、尺寸、裁切范围及顺序后再标记 `complete` / `verified`。
-5. 正式数据保存在网站仓库外的 `/Users/loveling/Belongs/album_source/`。运行 `node scripts/build-curated-official.mjs` 将已校对文章导出为独立的 `data/curated-official.json` / `.js` 与 `assets/official-articles/` 图片；官方首页会在旧画册数据之外加载这些作品。有主题时，单件详情的图文描述末尾附主题，整篇只读视图在最后显示一次；没有主题时只展示作品说明。旧 Word 的 1011 张图仍保留 `docx` 来源；导出脚本不会覆盖 `data/items.json` / `.js`。站外原始数据需另行备份，它不会随 GitHub Pages 发布。
+5. 运行 `node scripts/build-official-album.mjs`，从统一源目录重建历史数据与公众号新图文。单件详情在描述末尾空一行附主题，整篇只读视图在最后显示一次；没有主题时只展示作品说明。准确发布日期参与全站升序排列，同篇作品保留原文顺序。生成数据保持独立载荷，避免重复加载；不再重新解析 Word。
 
 校验命令：
 
@@ -38,4 +87,12 @@ python3 tests/source-data-schema-check.py \
   /Users/loveling/Belongs/album_source/entries/afUnYP9DPfBYOcFBT6-XCg.json
 ```
 
-校验器使用本机 `jsonschema` 和 `ffprobe`。路径使用相对数据根目录的路径，不在记录里写本机绝对路径、Cookie 或访问令牌。
+全量校验：
+
+```bash
+python3 tests/source-data-schema-check.py \
+  ../album_source/articles/*.json ../album_source/entries/*.json
+node tests/official-source-build-check.mjs
+```
+
+校验器使用 Python 的 `jsonschema` 和 `Pillow`。路径使用相对数据根目录的路径，不在记录里写本机绝对路径、Cookie 或访问令牌。`scripts/migrate-legacy-source.py` 仅供审计这次迁移；目标已有历史记录时会拒绝覆盖，日常维护使用 JSON 和统一构建命令。

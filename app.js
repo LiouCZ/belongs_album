@@ -410,6 +410,39 @@ function moveDetailImage(delta) {
   renderDetailImage();
 }
 
+function detailParagraphs(text) {
+  return text.split(/(\r?\n(?:[ \t]*\r?\n)+)/).map((part, index) =>
+    index % 2 === 0 && part ? `<p class="detail-paragraph">${escapeHtml(part)}</p>` : escapeHtml(part)
+  ).join("");
+}
+
+function renderDetailCaption(group) {
+  const caption = group.caption || (els.playerAlbum ? "" : "无文字说明");
+  const article = state.articles.get(group.articleId);
+  const work = article?.works.find((candidate) => candidate.id === group.items[0].workId);
+  const theme = work && article.theme?.text?.trim();
+  const suffix = theme && caption.endsWith(`\n\n${theme}`) ? `\n\n${theme}` : "";
+  const description = suffix ? caption.slice(0, -suffix.length) : caption;
+  let content = detailParagraphs(description);
+
+  // Only verified article descriptions have a predictable trailing specification block.
+  if (work?.description.trim() === description) {
+    const lines = description.split("\n");
+    const isSpecification = (line) => /^(搭配|规格|材质)[：:]/.test(line);
+    const start = lines.findIndex(isSpecification);
+    if (start > 0 && lines.slice(start).every(isSpecification)) {
+      const specifications = lines.slice(start).map((line) => {
+        const separator = line.search(/[：:]/) + 1;
+        return `<div class="detail-spec-row"><dt>${escapeHtml(line.slice(0, separator))}</dt><dd>${escapeHtml(line.slice(separator))}</dd></div>`;
+      }).join("\n");
+      content = `${detailParagraphs(lines.slice(0, start).join("\n"))}\n<dl class="detail-specs">${specifications}</dl>`;
+    }
+  }
+
+  els.detailCaption.innerHTML = content + (suffix ? `\n\n<p class="detail-theme">${escapeHtml(theme)}</p>` : "");
+  els.detailCaption.hidden = Boolean(els.playerAlbum && !group.caption);
+}
+
 function openDetail(group) {
   state.activeGroup = group;
   state.activeImageIndex = 0;
@@ -418,15 +451,12 @@ function openDetail(group) {
   if (els.playerAlbum) {
     els.detailMeta.textContent = group.collection;
     els.detailIndex.textContent = `第 ${String(group.index).padStart(2, "0")} 组 · ${group.imageCount} 张图片`;
-    els.detailCaption.textContent = group.caption;
-    els.detailCaption.hidden = !group.caption;
   } else {
     els.detailMeta.textContent = `${group.date} · ${group.year}`;
     els.detailIndex.textContent = `${group.year} 第 ${String(group.index).padStart(3, "0")} 组 · ${group.imageCount} 张图片 · 全集 Item ${sourceRange(group)}`;
-    els.detailCaption.textContent = group.caption || "无文字说明";
-    els.detailCaption.hidden = false;
     els.openArticle.hidden = !group.articleId;
   }
+  renderDetailCaption(group);
   if (typeof els.dialog.showModal === "function") {
     els.dialog.showModal();
   } else {

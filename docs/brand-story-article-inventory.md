@@ -1,6 +1,6 @@
 # Belongs 品牌故事图文素材清单（2021-2026）
 
-数据定位：`/Users/loveling/Belongs/belongs_album/data/items.json`；篇名与实际日期再以 `/Users/loveling/Belongs/Belongs2021-2026公众号合集.docx` 的 `textutil -convert txt -stdout` 输出核对。下表的 `item id` 是 `items.json` 原样 ID，重复图片只列代表 ID；一个叙事被拆入多条时另列连续 ID。**“关键原文短句”是原话，“可展开角度”是本清单的概括，不可当作品牌原话引用。**可靠度指“该日期/篇名与叙事对应关系”的把握，不代表文中历史、宗教或文化论断已获外部事实核验。
+历史审计定位：本文的拆段、错位和旧行号描述针对迁移前的 `items.json` 快照，现保存在 `/Users/loveling/Belongs/album_source/backups/legacy-v1/items.json`；当时以原 Word 核对篇名和日期。2026-11-04 已迁移到 `album_source/entries/legacy-*.json`，当前网页数据由统一构建命令生成，不再依赖 Word；已修复的拆段和日期见 `migrations/legacy-v1.json`。下表的旧图片 ID 全部保留，品牌故事仍可据此定位。**“关键原文短句”是原话，“可展开角度”是本清单的概括，不可当作品牌原话引用。**可靠度指“该日期/篇名与叙事对应关系”的把握，不代表文中历史、宗教或文化论断已获外部事实核验。
 
 ## 2021 年：已核对的叙事候选
 

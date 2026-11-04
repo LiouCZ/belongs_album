@@ -1,3 +1,10 @@
 .DS_Store
 qa-*.png
 tmp-test-output/
+
+# Local source documents and print albums are not website assets.
+*.doc
+*.docx
+*.pdf
+*.zip
+~$*

@@ -433,6 +433,80 @@ main {
   margin: 28px auto 64px;
 }
 
+.brand-closing {
+  padding: 0 18px 64px;
+  background: var(--bg);
+  color: var(--header-text);
+  text-align: center;
+}
+
+.brand-closing-quote {
+  margin: 0;
+  font-family: "Songti SC", "STSong", "SimSun", serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.9;
+}
+
+.brand-closing-signature {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+  color: var(--header-muted);
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.brand-closing-signature span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.brand-closing-signature sup {
+  font-size: 0.65em;
+  line-height: 0;
+}
+
+.brand-closing-signature::before,
+.brand-closing-signature::after {
+  width: 36px;
+  height: 1px;
+  background: currentColor;
+  content: "";
+}
+
+.view-list-page .brand-closing {
+  padding-top: 48px;
+}
+
+@media (max-width: 680px) {
+  .brand-closing {
+    padding-bottom: 48px;
+  }
+
+  .brand-closing-quote {
+    font-size: 16px;
+  }
+
+  .brand-closing-quote span {
+    display: block;
+  }
+
+  .brand-closing-signature {
+    margin-top: 20px;
+    font-size: 15px;
+  }
+
+  .brand-closing-signature::before,
+  .brand-closing-signature::after {
+    width: 24px;
+  }
+}
+
 .controls {
   display: grid;
   grid-template-columns: minmax(280px, 460px) minmax(118px, 150px) minmax(0, 1fr);
@@ -1384,6 +1458,22 @@ body.view-list-page {
   touch-action: manipulation;
 }
 
+@media (min-width: 861px) {
+  .detail-grid {
+    grid-template-rows: minmax(0, 1fr);
+    min-height: min(620px, calc(100vh - 38px));
+    max-height: min(898px, calc(100vh - 38px));
+  }
+
+  .detail figure {
+    min-height: 0;
+  }
+
+  .detail figure img {
+    max-height: 100%;
+  }
+}
+
 .detail figure.is-image-zoomed {
   overflow: hidden;
 }
@@ -1446,6 +1536,7 @@ body.view-list-page {
 }
 
 .detail article {
+  min-width: 0;
   overflow: auto;
   padding: 44px 34px 34px;
 }
@@ -1457,11 +1548,12 @@ body.view-list-page {
 
 .detail h2 {
   margin-top: 14px;
-  padding-bottom: 18px;
-  border-bottom: 2px solid var(--accent);
-  font-size: clamp(24px, 2.4vw, 34px);
-  font-weight: 500;
-  line-height: 1.25;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  font-family: "Songti SC", "STSong", "SimSun", serif;
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
@@ -1469,15 +1561,59 @@ body.view-list-page {
   margin-top: 12px;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
 }
 
 .detail-caption {
   margin-top: 26px;
-  white-space: pre-wrap;
   color: #2f3435;
   font-size: 16px;
-  line-height: 1.85;
+  line-height: 1.9;
   overflow-wrap: anywhere;
+}
+
+.detail-paragraph,
+.detail-theme {
+  white-space: pre-wrap;
+}
+
+.detail-paragraph + .detail-paragraph {
+  margin-top: 16px;
+}
+
+.detail-specs {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 0;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.detail-spec-row {
+  display: grid;
+  grid-template-columns: 3em minmax(0, 1fr);
+  gap: 10px;
+}
+
+.detail-specs dt,
+.detail-specs dd {
+  min-width: 0;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.detail-specs dt {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: calc(27 / 13);
+}
+
+.detail-theme {
+  margin-top: 32px;
+  font-family: "Songti SC", "STSong", "SimSun", serif;
+  font-size: 17px;
+  line-height: 1.9;
 }
 
 .curated-card .thumb img {
@@ -2577,6 +2713,18 @@ body.view-list-page {
 @media (max-width: 680px) {
   .results-bar {
     flex-wrap: wrap;
+  }
+
+  .detail article {
+    padding: 28px 22px;
+  }
+
+  .detail h2 {
+    font-size: 22px;
+  }
+
+  .detail-caption {
+    margin-top: 22px;
   }
 
   .results-copy {

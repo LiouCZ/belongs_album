@@ -15,11 +15,20 @@ function plain(value) {
 }
 
 function sourceItems(ids, cell) {
-  if (!cell.includes("至") || ids.length !== 2) return ids.map((id) => itemById.get(id));
-  const first = items.findIndex((item) => item.id === ids[0]);
-  const last = items.findIndex((item) => item.id === ids[1]);
-  if (first < 0 || last < first) throw new Error(`Invalid item range: ${cell}`);
-  return items.slice(first, last + 1);
+  let selected = ids.map((id) => itemById.get(id));
+  if (cell.includes("至") && ids.length === 2) {
+    const first = items.findIndex((item) => item.id === ids[0]);
+    const last = items.findIndex((item) => item.id === ids[1]);
+    if (first < 0 || last < first) throw new Error(`Invalid item range: ${cell}`);
+    selected = items.slice(first, last + 1);
+  }
+  const seen = new Set();
+  return selected.filter((item) => {
+    const identity = item.workId || item.id;
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
 }
 
 for (const line of inventory.split("\n")) {

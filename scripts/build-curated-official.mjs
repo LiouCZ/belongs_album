@@ -3,22 +3,21 @@ import { copyFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const site = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const source = path.resolve(site, "../album_source");
+const defaultSite = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function displayDate(date) {
   const [year, month, day] = date.split("-").map(Number);
   return `${year}年${month}月${day}日`;
 }
 
-function sourceFile(relative) {
+function sourceFile(source, relative) {
   const file = path.resolve(source, relative);
   if (!file.startsWith(`${source}${path.sep}`)) throw new Error(`Invalid source path: ${relative}`);
   return file;
 }
 
-async function build() {
-  const legacy = JSON.parse(await readFile(path.join(site, "data/items.json"), "utf8"));
+export async function buildCuratedOfficial({ site = defaultSite, source = path.resolve(defaultSite, "../album_source"), legacy } = {}) {
+  legacy ??= JSON.parse(await readFile(path.join(site, "data/items.json"), "utf8"));
   const yearIndexes = new Map();
   let sourceIndex = 0;
   for (const item of legacy.items) {
@@ -52,7 +51,7 @@ async function build() {
     for (const entry of ordered) {
       const images = [];
       for (const [imageIndex, image] of entry.images.entries()) {
-        const input = sourceFile(image.path);
+        const input = sourceFile(source, image.path);
         const bytes = await readFile(input);
         const digest = createHash("sha256").update(bytes).digest("hex");
         if (digest !== image.sha256) throw new Error(`Image hash mismatch: ${input}`);
@@ -99,12 +98,16 @@ async function build() {
 
   const payload = { schemaVersion: 1, articles, items };
   const json = JSON.stringify(payload, null, 2);
+  await mkdir(path.join(site, "data"), { recursive: true });
   await writeFile(path.join(site, "data/curated-official.json"), `${json}\n`);
   await writeFile(path.join(site, "data/curated-official.js"), `window.BELONGS_CURATED = ${json};\n`);
   console.log(`articles=${articles.length} works=${articles.reduce((count, article) => count + article.works.length, 0)} images=${items.length}`);
+  return payload;
 }
 
-build().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  buildCuratedOfficial().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

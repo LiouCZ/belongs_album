@@ -78,8 +78,8 @@ async function run() {
           curatedDates.push(...await page.locator(".gallery .curated-card .meta").allTextContents());
           await page.locator("#prevPage").click();
         }
-        assert.match(dates[0], /2026年1月9日/);
-        assert.match(dates[1], /2026/);
+        assert.match(dates[0], /2026年1月1日/);
+        assert.match(dates[1], /2026年1月9日/);
         assert.deepEqual(curatedDates.map((text) => text.match(/\d{4}年\d{1,2}月\d{1,2}日/)?.[0]), expectedDates);
         const june = dates.findIndex((text) => text.includes("2026年6月26日"));
         const july = dates.findIndex((text) => text.includes("2026年7月10日"));

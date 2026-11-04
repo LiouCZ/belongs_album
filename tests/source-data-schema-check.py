@@ -3,11 +3,11 @@
 
 import hashlib
 import json
-import subprocess
 import sys
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
+from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,7 +21,9 @@ def local_file(root: Path, relative: str) -> Path:
     path = Path(relative)
     if path.is_absolute() or ".." in path.parts:
         raise ValueError(f"unsafe relative path: {relative}")
-    result = root / path
+    result = (root / path).resolve()
+    if not result.is_relative_to(root.resolve()):
+        raise ValueError(f"unsafe relative path: {relative}")
     if not result.is_file():
         raise ValueError(f"image not found: {result}")
     return result
@@ -32,15 +34,9 @@ def verify_image(root: Path, relative: str, sha256: str | None, width: int | Non
     if sha256 and hashlib.sha256(path.read_bytes()).hexdigest() != sha256:
         raise ValueError(f"image hash mismatch: {path}")
     if width and height:
-        result = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", str(path)],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        stream = json.loads(result.stdout)["streams"][0]
-        if (stream["width"], stream["height"]) != (width, height):
-            raise ValueError(f"image dimensions mismatch: {path}")
+        with Image.open(path) as image:
+            if image.size != (width, height):
+                raise ValueError(f"image dimensions mismatch: {path}")
 
 
 def validate(paths: list[Path]) -> None:
@@ -75,11 +71,16 @@ def validate(paths: list[Path]) -> None:
                 for asset in record["sourceImages"]:
                     verify_image(record["_root"], asset["localPath"], asset["sha256"], asset["width"], asset["height"])
             else:
+                if record.get("year") and record["date"] and record["year"] != record["date"][:4]:
+                    raise ValueError(f"work year does not match date: {path}")
                 image_ids = [image["id"] for image in record["images"]]
                 if len(image_ids) != len(set(image_ids)):
                     raise ValueError(f"duplicate work image ID: {path}")
                 for image in record["images"]:
                     verify_image(record["_root"], image["path"], image.get("sha256"), image.get("width"), image.get("height"))
+                    thumbnail = image.get("thumbnail")
+                    if thumbnail:
+                        verify_image(record["_root"], thumbnail["path"], thumbnail["sha256"], thumbnail["width"], thumbnail["height"])
                 if record["source"]["kind"] == "docx":
                     indexes = [image.get("sourceImageIndex") for image in record["images"]]
                     if indexes != record["source"]["sourceImageIndexes"]:
