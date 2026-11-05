@@ -16,7 +16,28 @@ const chromePath = process.env.CHROME_EXECUTABLE || "/Applications/Google Chrome
 async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
   try {
-    for (const width of [1280, 390, 320]) {
+    const offscreen = await browser.newPage({ viewport: { width: 390, height: 300 } });
+    await offscreen.goto(`file://${path.join(root, "brand-story.html")}`);
+    await offscreen.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState !== "loading");
+    assert.equal(await offscreen.locator(".story-sketch").getAttribute("data-sketch-state"), "waiting", "an offscreen title image must wait for the reader");
+    await offscreen.waitForTimeout(5200);
+    assert.equal(await offscreen.locator(".story-sketch").getAttribute("data-sketch-state"), "waiting", "waiting five seconds offscreen must not consume the animation");
+    assert.equal(await offscreen.locator(".story-sketch").evaluate((figure) => figure.getAnimations({ subtree: true }).length), 0);
+    await offscreen.locator(".story-sketch").scrollIntoViewIfNeeded();
+    await offscreen.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState === "drawing");
+    await offscreen.locator(".story-sketch").evaluate((figure) => {
+      for (const animation of figure.getAnimations({ subtree: true })) animation.finish();
+    });
+    await offscreen.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState === "complete");
+    await offscreen.evaluate(() => scrollTo(0, 0));
+    await offscreen.locator(".brand-illustration").scrollIntoViewIfNeeded();
+    await offscreen.locator(".story-sketch").scrollIntoViewIfNeeded();
+    assert.equal(await offscreen.locator(".story-sketch").getAttribute("data-sketch-state"), "complete", "returning to the image should not replay it");
+    assert.equal(await offscreen.locator(".story-sketch").evaluate((figure) => figure.getAnimations({ subtree: true }).length), 0);
+    await offscreen.close();
+    console.log("PASS the title image waits offscreen, starts on entry, and plays only once");
+
+    for (const width of [1440, 1280, 768, 390, 320]) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       page.setDefaultTimeout(5000);
       const errors = [];
@@ -24,6 +45,15 @@ async function run() {
       await page.goto(`file://${path.join(root, "brand-story.html")}`);
       const sketch = page.locator(".story-sketch");
       assert.equal(await sketch.count(), 1, "the opening image should have one handwriting scene");
+      const heading = await page.locator(".philosophy-opening h2").boundingBox();
+      const opening = await page.locator(".philosophy-opening").boundingBox();
+      const imageBox = await sketch.boundingBox();
+      const introduction = await page.locator(".philosophy-introduction").boundingBox();
+      assert.ok(heading.y + heading.height + 20 <= imageBox.y, "the opening title should lead into the image with breathing room");
+      assert.ok(imageBox.width <= 780, "the title image must not dominate the desktop opening");
+      assert.ok(Math.abs(imageBox.x - opening.x) < 1 && Math.abs(imageBox.width - opening.width) < 1, "heading and image should share one reading column");
+      assert.ok(introduction.y >= imageBox.y + imageBox.height + 20, "the introduction should follow the image, not precede it");
+      assert.ok(Math.abs(introduction.x - imageBox.x) < 1, "the introduction should align with the title image");
       await page.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState === "drawing");
       const timing = await sketch.evaluate((figure) => {
         const animations = figure.getAnimations({ subtree: true });
@@ -81,6 +111,23 @@ async function run() {
     assert.equal(await preference.locator(".story-sketch").evaluate((figure) => figure.getAnimations({ subtree: true }).length), 0);
     await preference.close();
     console.log("PASS changing motion preferences stops the running animation");
+    const waitingPreference = await browser.newPage({ viewport: { width: 390, height: 300 } });
+    await waitingPreference.goto(`file://${path.join(root, "brand-story.html")}`);
+    await waitingPreference.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState === "waiting");
+    await waitingPreference.emulateMedia({ reducedMotion: "reduce" });
+    await waitingPreference.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState === "complete");
+    await waitingPreference.locator(".story-sketch").scrollIntoViewIfNeeded();
+    assert.equal(await waitingPreference.locator(".story-sketch").evaluate((figure) => figure.getAnimations({ subtree: true }).length), 0);
+    await waitingPreference.close();
+    console.log("PASS reduced motion dismisses the offscreen wait without starting an animation");
+    const unsupported = await browser.newPage();
+    await unsupported.addInitScript(() => { delete window.IntersectionObserver; });
+    await unsupported.goto(`file://${path.join(root, "brand-story.html")}`);
+    await unsupported.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState === "drawing");
+    assert.equal(await unsupported.locator(".story-sketch").evaluate((figure) =>
+      Math.max(...figure.getAnimations({ subtree: true }).map((animation) => animation.effect.getComputedTiming().endTime))), 5000);
+    await unsupported.close();
+    console.log("PASS browsers without viewport observation still show the five-second animation");
   } finally {
     await browser.close();
   }

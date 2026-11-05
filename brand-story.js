@@ -101,8 +101,14 @@ async function setupStorySketch() {
   const figure = document.querySelector(".story-sketch");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let animations = [];
+  let observer = null;
+  let finishWaiting = null;
   function complete() {
     figure.dataset.sketchState = "complete";
+    observer?.disconnect();
+    observer = null;
+    finishWaiting?.();
+    finishWaiting = null;
     for (const animation of animations) animation.cancel();
     animations = [];
   }
@@ -116,6 +122,23 @@ async function setupStorySketch() {
     inkImage.src = figure.querySelector(".sketch-ink image").getAttribute("href");
     await Promise.all([...figure.querySelectorAll("img"), inkImage].map((image) => image.decode()));
     if (figure.dataset.sketchState === "complete") return;
+
+    if ("IntersectionObserver" in window) {
+      figure.dataset.sketchState = "waiting";
+      await new Promise((resolve) => {
+        finishWaiting = resolve;
+        observer = new IntersectionObserver((entries) => {
+          if (figure.dataset.sketchState !== "waiting") return;
+          if (!entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.2)) return;
+          observer.disconnect();
+          observer = null;
+          finishWaiting = null;
+          resolve();
+        }, { threshold: 0.2 });
+        observer.observe(figure);
+      });
+      if (figure.dataset.sketchState === "complete") return;
+    }
 
     // These paths reveal the original photographed marks, rather than drawing a substitute illustration.
     const phases = [
