@@ -54,6 +54,10 @@ async function run() {
       assert.ok(Math.abs(imageBox.x - opening.x) < 1 && Math.abs(imageBox.width - opening.width) < 1, "heading and image should share one reading column");
       assert.ok(introduction.y >= imageBox.y + imageBox.height + 20, "the introduction should follow the image, not precede it");
       assert.ok(Math.abs(introduction.x - imageBox.x) < 1, "the introduction should align with the title image");
+      const illustration = await page.locator(".brand-illustration").boundingBox();
+      assert.ok(Math.abs(illustration.x - imageBox.x) < 1, "the character illustration must share the title image's left edge");
+      assert.ok(Math.abs(illustration.x + illustration.width - imageBox.x - imageBox.width) < 1, "the character illustration must share the title image's right edge");
+      assert.ok(Math.abs(illustration.width / illustration.height - 1.5) < 0.01, "align the character illustration without cropping or stretching it");
       await page.waitForFunction(() => document.querySelector(".story-sketch").dataset.sketchState === "drawing");
       const timing = await sketch.evaluate((figure) => {
         const animations = figure.getAnimations({ subtree: true });

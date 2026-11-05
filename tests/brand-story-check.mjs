@@ -19,6 +19,37 @@ const expected = [
 ];
 const themes = ["手作与原创", "自然与复古美学", "形与象征", "时间与情感"];
 
+async function assertWhitespaceOrnaments(page, viewport) {
+  const ornaments = page.locator(".story-ornament");
+  assert.equal(await ornaments.count(), 2, "the opening should include snake-bone and grape-leaf details");
+  await page.waitForFunction(() => [...document.querySelectorAll(".story-ornament")].every((element) => element.dataset.ornamentState === "ready"));
+  for (const ornament of await ornaments.all()) {
+    assert.equal(await ornament.evaluate((element) => {
+      const canvas = element.querySelector("canvas");
+      return canvas?.width > 0 && canvas?.height > 0;
+    }), true, "both decorative assets must load and render");
+  }
+  const boxes = await ornaments.evaluateAll((elements) => elements.map((element) => {
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, display: style.display, pointerEvents: style.pointerEvents, hidden: element.getAttribute("aria-hidden") };
+  }));
+  const introduction = await page.locator(".philosophy-introduction").boundingBox();
+  const illustration = await page.locator(".brand-illustration").boundingBox();
+  for (const ornament of boxes) {
+    assert.equal(ornament.pointerEvents, "none", "decorations must not intercept mouse or touch interactions");
+    assert.equal(ornament.hidden, "true", "decorations should stay out of the reading order");
+    if (ornament.display !== "none") assert.ok(ornament.left >= 0 && ornament.right <= viewport.width, "decorations should stay within the viewport");
+  }
+  if (viewport.width < 1024) {
+    assert.ok(boxes[0].top >= introduction.y + introduction.height + 10, "the mobile ornament should not overlap the introduction");
+    assert.ok(boxes[0].bottom <= illustration.y - 10, "the mobile ornament should not overlap the portrait");
+    const chapters = await page.locator(".philosophy-chapters").boundingBox();
+    assert.ok(boxes[1].top >= illustration.y + illustration.height + 8, "the mobile leaves should sit below the portrait");
+    assert.ok(boxes[1].bottom <= chapters.y - 8, "the mobile leaves should stay clear of the next chapter");
+  }
+}
+
 async function assertImageFrames(page) {
   const standaloneImages = await page.locator(".brand-illustration img, .philosophy-chapter img").evaluateAll((images) =>
     images.map((image) => {
@@ -71,11 +102,12 @@ async function run() {
       await page.close();
     }
 
-    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 720 }]) {
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 900 }, { width: 1024, height: 900 }, { width: 768, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 720 }]) {
       const page = await browser.newPage({ viewport });
       await page.goto(`file://${path.join(root, "brand-story.html")}`);
       assert.equal(await page.locator("h1").textContent(), "品牌故事");
       await assertImageFrames(page);
+      await assertWhitespaceOrnaments(page, viewport);
       const philosophy = page.getByRole("region", { name: "创作理念" });
       assert.equal(await philosophy.locator(".philosophy-chapter").count(), themes.length);
       const illustration = philosophy.locator(".brand-illustration");
