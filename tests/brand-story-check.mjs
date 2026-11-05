@@ -81,6 +81,42 @@ async function run() {
       const illustration = philosophy.locator(".brand-illustration");
       assert.equal(await illustration.count(), 1);
       assert.equal(await illustration.locator("figcaption").count(), 0);
+      const headspots = illustration.locator(".brand-headspot");
+      assert.equal(await headspots.count(), 2);
+      assert.deepEqual(await headspots.evaluateAll((spots) => spots.map((spot) => ({
+        label: spot.getAttribute("aria-label"),
+        target: spot.getAttribute("aria-controls"),
+      }))), [
+        { label: "与 binbin 打招呼", target: "brandVoiceMale" },
+        { label: "与 Lydia 打招呼", target: "brandVoiceFemale" },
+      ]);
+      const maleSpot = headspots.nth(0);
+      const femaleSpot = headspots.nth(1);
+      const maleVoice = illustration.locator("#brandVoiceMale");
+      const femaleVoice = illustration.locator("#brandVoiceFemale");
+      assert.equal(await maleVoice.isHidden(), true);
+      assert.equal(await femaleVoice.isHidden(), true);
+      await maleSpot.hover();
+      assert.equal(await maleVoice.isVisible(), true);
+      assert.equal(await maleVoice.textContent(), "大家好，我是 binbin");
+      assert.equal(await femaleVoice.isHidden(), true);
+      await femaleSpot.hover();
+      assert.equal(await maleVoice.isHidden(), true);
+      assert.equal(await femaleVoice.isVisible(), true);
+      assert.equal(await femaleVoice.textContent(), "大家好，我是Lydia");
+      const voiceBox = await femaleVoice.boundingBox();
+      assert.ok(voiceBox.x >= 8 && voiceBox.x + voiceBox.width <= viewport.width - 8, "the bubble should stay inside the viewport");
+      await page.mouse.move(1, 1);
+      assert.equal(await femaleVoice.isHidden(), true);
+      await maleSpot.click();
+      assert.equal(await maleVoice.isVisible(), true);
+      await page.mouse.move(1, 1);
+      assert.equal(await maleVoice.isHidden(), true, "mouse focus must not keep a bubble visible after leaving");
+      await page.keyboard.press("Tab");
+      assert.equal(await femaleSpot.evaluate((spot) => document.activeElement === spot), true);
+      assert.equal(await femaleVoice.isVisible(), true);
+      await page.keyboard.press("Escape");
+      assert.equal(await femaleVoice.isHidden(), true);
       assert.equal(await illustration.evaluate((figure) => {
         const opening = figure.previousElementSibling;
         const chapters = figure.nextElementSibling;
@@ -155,6 +191,20 @@ async function run() {
       console.log(`PASS brand story frames and interactions ${viewport.width}px`);
       await page.close();
     }
+    const touch = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await touch.goto(`file://${path.join(root, "brand-story.html")}`);
+    const male = touch.getByRole("button", { name: "与 binbin 打招呼" });
+    const female = touch.getByRole("button", { name: "与 Lydia 打招呼" });
+    await male.tap();
+    assert.equal(await touch.locator("#brandVoiceMale").isVisible(), true);
+    await male.tap();
+    assert.equal(await touch.locator("#brandVoiceMale").isHidden(), true);
+    await female.tap();
+    assert.equal(await touch.locator("#brandVoiceFemale").isVisible(), true);
+    await touch.locator(".brand-illustration img").tap({ position: { x: 10, y: 20 } });
+    assert.equal(await touch.locator("#brandVoiceFemale").isHidden(), true);
+    await touch.close();
+    console.log("PASS touch greeting toggles and outside dismissal");
   } finally {
     await browser.close();
   }

@@ -60,6 +60,155 @@ const els = {
   sourceClose: document.querySelector("#storySourceClose"),
 };
 
+function setupIllustrationVoices() {
+  const illustration = document.querySelector(".brand-illustration");
+  const headspots = illustration.querySelectorAll(".brand-headspot");
+
+  function showVoice(activeSpot = null) {
+    for (const spot of headspots) {
+      const open = spot === activeSpot;
+      document.getElementById(spot.getAttribute("aria-controls")).hidden = !open;
+      spot.setAttribute("aria-expanded", String(open));
+    }
+  }
+
+  for (const spot of headspots) {
+    spot.addEventListener("pointerenter", (event) => {
+      if (event.pointerType !== "touch") showVoice(spot);
+    });
+    spot.addEventListener("pointerleave", (event) => {
+      if (event.pointerType !== "touch") showVoice();
+    });
+    spot.addEventListener("focus", () => {
+      if (spot.matches(":focus-visible")) showVoice(spot);
+    });
+    spot.addEventListener("blur", () => showVoice());
+    spot.addEventListener("click", (event) => {
+      const close = event.pointerType === "touch" && spot.getAttribute("aria-expanded") === "true";
+      showVoice(close ? null : spot);
+    });
+  }
+
+  document.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest(".brand-headspot")) showVoice();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") showVoice();
+  });
+}
+
+async function setupStorySketch() {
+  const figure = document.querySelector(".story-sketch");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let animations = [];
+  function complete() {
+    figure.dataset.sketchState = "complete";
+    for (const animation of animations) animation.cancel();
+    animations = [];
+  }
+  reducedMotion.addEventListener("change", (event) => {
+    if (event.matches) complete();
+  });
+  if (reducedMotion.matches || !figure.animate) return complete();
+
+  try {
+    const inkImage = new Image();
+    inkImage.src = figure.querySelector(".sketch-ink image").getAttribute("href");
+    await Promise.all([...figure.querySelectorAll("img"), inkImage].map((image) => image.decode()));
+    if (figure.dataset.sketchState === "complete") return;
+
+    // These paths reveal the original photographed marks, rather than drawing a substitute illustration.
+    const phases = [
+      { duration: 700, width: 16, paths: [
+        "M177 509 C175 466 181 429 195 380 C214 305 234 235 263 163 C297 91 341 39 408 0",
+      ] },
+      { duration: 2380, width: 14, paths: [
+        "M184 447 Q191 419 215 397",
+        "M187 434 Q201 413 229 386",
+        "M190 419 Q208 400 236 371",
+        "M193 407 Q216 386 247 352",
+        "M196 395 Q220 377 256 336",
+        "M199 382 Q226 362 266 319",
+        "M202 369 Q230 353 278 299",
+        "M206 354 Q244 333 292 280",
+        "M210 341 Q248 321 306 260",
+        "M215 325 Q259 301 318 241",
+        "M220 309 Q271 278 331 221",
+        "M225 293 Q275 263 342 202",
+        "M230 277 Q290 242 349 182",
+        "M236 260 Q294 229 355 163",
+        "M242 243 Q302 213 357 146",
+        "M249 224 Q306 193 366 122",
+        "M257 203 Q316 175 377 100",
+        "M265 182 Q328 145 389 75",
+        "M276 161 Q343 120 400 45",
+        "M288 137 Q351 98 408 16",
+        "M195 383 Q196 349 210 314",
+        "M206 345 Q210 301 226 258",
+        "M220 299 Q226 249 244 202",
+        "M237 246 Q245 193 265 145",
+        "M256 192 Q269 133 291 81",
+        "M283 131 Q309 70 350 16",
+        "M315 83 Q352 39 382 0",
+      ] },
+      { duration: 1500, width: 15, paths: [
+        "M305 326 Q307 314 321 311 Q326 324 318 351",
+        "M302 322 C309 307 329 303 337 314 Q347 326 329 335 C350 327 359 340 346 353 C330 370 296 373 297 352 L305 349",
+        "M369 295 C357 290 359 305 364 319 Q369 337 357 347",
+        "M354 335 C371 338 394 338 401 329 Q405 322 398 323",
+        "M422 285 C408 278 395 284 402 295 C408 305 425 301 431 309 C441 322 424 328 413 320",
+        "M450 307 L455 307",
+        "M476 293 L469 263 L479 255",
+        "M464 270 L494 279",
+        "M491 278 L477 282 L499 296",
+      ] },
+      { duration: 420, width: 12, paths: [
+        "M2 497 L825 174",
+        "M792 176 L823 174 L795 193",
+        "M180 430 Q333 367 505 339",
+      ] },
+    ];
+    const group = figure.querySelector("#storySketchStrokes");
+    let phaseStart = 0;
+    for (const phase of phases) {
+      const paths = phase.paths.map((description) => {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", description);
+        path.setAttribute("pathLength", "1");
+        path.setAttribute("stroke-width", String(phase.width));
+        group.append(path);
+        return path;
+      });
+      const lengths = paths.map((path) => path.getTotalLength());
+      const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+      let traversed = 0;
+      for (const [index, path] of paths.entries()) {
+        const start = phaseStart + Math.round(phase.duration * traversed / totalLength);
+        traversed += lengths[index];
+        const end = phaseStart + Math.round(phase.duration * traversed / totalLength);
+        animations.push(path.animate([
+          { strokeDashoffset: 1, opacity: 0 },
+          { strokeDashoffset: 1, opacity: 1, offset: 0.001 },
+          { strokeDashoffset: 0, opacity: 1 },
+        ], {
+          delay: start, duration: end - start, easing: "linear", fill: "both",
+        }));
+      }
+      phaseStart += phase.duration;
+    }
+    animations.push(figure.querySelector(".sketch-original").animate([{ opacity: 0 }, { opacity: 1 }], {
+      delay: 4800, duration: 200, easing: "linear", fill: "both",
+    }));
+    const startTime = document.timeline.currentTime;
+    for (const animation of animations) animation.startTime = startTime;
+    figure.dataset.sketchState = "drawing";
+    await Promise.all(animations.map((animation) => animation.finished));
+    complete();
+  } catch {
+    complete();
+  }
+}
+
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -235,6 +384,8 @@ els.dialog.addEventListener("click", (event) => {
   if (event.target === els.dialog) els.dialog.close();
 });
 
+setupIllustrationVoices();
+setupStorySketch();
 renderFeatures();
 renderYearFilter();
 renderCatalog();
