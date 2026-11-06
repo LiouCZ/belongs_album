@@ -34,7 +34,7 @@ try {
   }
   const curated = JSON.parse(readFileSync(path.join(output, "data/curated-official.json"), "utf8"));
   assert.deepEqual(curated.articles, JSON.parse(readFileSync(path.join(root, "data/curated-official.json"), "utf8")).articles);
-  assert.equal(curated.items.length, 42);
+  assert.equal(curated.items.length, 48);
   const context = vm.createContext({ window: {} });
   vm.runInContext(readFileSync(path.join(output, "data/items.js"), "utf8"), context);
   assert.equal(context.window.BELONGS_DATA.items.length, backup.items.length);

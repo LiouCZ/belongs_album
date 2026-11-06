@@ -17,6 +17,7 @@ const sourceArticles = [
   ["zAgTUUI6DRLU7rFtnm-LSg", "2026-09-25", "——月圆人圆 万事皆甜——", 8],
   ["nPVJ0e54hqny1x9BH473mw", "2026-10-09", "——感受留白的温柔——", 7],
   ["afUnYP9DPfBYOcFBT6-XCg", "2026-10-23", "——被温暖环绕——", 7],
+  ["ZaunOWM_hnsku97nyFtJhA", "2026-11-06", "——细节环绕——", 6],
 ];
 const chromePath = process.env.CHROME_EXECUTABLE || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
@@ -41,6 +42,10 @@ async function run() {
         if (slug === "DdwT0oJaKUtboMoAnPo6Ng") {
           assert.deepEqual(await page.locator(".gallery .card h3").allTextContents(),
             ["马首", "合心牌", "合心牌", "合心牌", "合心牌", "初心羽", "雏翼戒指"]);
+        }
+        if (slug === "ZaunOWM_hnsku97nyFtJhA") {
+          assert.deepEqual(await page.locator(".gallery .card h3").allTextContents(),
+            ["雏翼戒指", "平打戒指", "S十字", "马首", "莫比乌斯手镯", "平打手镯"]);
         }
         await page.locator(".gallery .card").first().click();
         assert.equal((await page.locator("#detailCaption").textContent()).trim().endsWith(theme), true);
@@ -67,6 +72,7 @@ async function run() {
         ...Array(8).fill("2026年9月25日"),
         ...Array(7).fill("2026年10月9日"),
         ...Array(7).fill("2026年10月23日"),
+        ...Array(6).fill("2026年11月6日"),
       ];
       for (const view of ["grid", "list"]) {
         await page.locator(`#viewSwitch [data-view="${view}"]`).click();

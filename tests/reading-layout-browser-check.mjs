@@ -47,7 +47,7 @@ try {
       }
       return { count: state.groups.length, failures };
     });
-    assert.equal(audit.count, 760);
+    assert.equal(audit.count, 766);
     assert.deepEqual(audit.failures, [], `${width}px corpus audit`);
     await page.locator("#closeDialog").click();
     for (const id of ["2023-043-7327f96269", "2023-035-d5db39d114", "2023-013-361b50f596", "2021-225-3d46972a33", "2022-068-bedc317626", "2026-002-814025bed3"]) {

@@ -104,4 +104,4 @@ for (const [id, anchors] of Object.entries(reading.anchors)) {
   assert.ok(item, `special layout must use an existing stable work ID: ${id}`);
   for (const anchor of anchors) assert.ok(item.caption.split(/\r?\n/).includes(anchor), `${id}: stale layout anchor ${anchor}`);
 }
-console.log(`PASS lossless formatting of ${groups.size} historical works, 42 curated works, numbering, specifications, safe fallback and special layouts`);
+console.log(`PASS lossless formatting of ${groups.size} historical works, ${curated.articles.reduce((count, article) => count + article.works.length, 0)} curated works, numbering, specifications, safe fallback and special layouts`);

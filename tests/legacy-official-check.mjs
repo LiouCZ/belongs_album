@@ -22,7 +22,7 @@ try {
     }));
     assert.equal(dates.every((date) => date !== null), true, "recovered publication dates must be explicit");
     assert.deepEqual(dates, [...dates].sort((a, b) => a - b), "all historical/new groups must sort together by publication date");
-    assert.equal(await page.evaluate(() => new Set(state.items.map((item) => item.id)).size), 1053);
+    assert.equal(await page.evaluate(() => new Set(state.items.map((item) => item.id)).size), 1059);
     for (const view of ["grid", "list"]) {
       await page.locator(`#viewSwitch [data-view="${view}"]`).click();
       await page.locator("#searchInput").fill("侘寂之美");
