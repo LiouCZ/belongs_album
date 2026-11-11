@@ -82,6 +82,26 @@ async function run() {
       const brandInfo = page.locator(".brand-public-info");
       assert.match(await brandInfo.textContent(), /小红书号：BELONGS/);
       assert.match(await brandInfo.textContent(), /微信公众号：BELONGS OFFICIAL/);
+      const socialLink = brandInfo.getByRole("link", { name: "BELONGS", exact: true });
+      const socialUrl = "https://www.xiaohongshu.com/user/profile/651a074a00000000240173a2";
+      assert.equal(await socialLink.count(), 1, "the official Xiaohongshu account should be a link");
+      assert.equal(await socialLink.getAttribute("href"), socialUrl);
+      assert.equal(await socialLink.getAttribute("target"), "_blank");
+      assert.match(await socialLink.getAttribute("rel"), /\bnoopener\b/);
+      assert.match(await socialLink.getAttribute("rel"), /\bnoreferrer\b/);
+      assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).color),
+        await brandInfo.evaluate((info) => getComputedStyle(info).color), "keep the original account text color");
+      assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).textDecorationLine), "none");
+      await socialLink.hover();
+      assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).textDecorationLine), "underline");
+      await socialLink.focus();
+      assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).outlineStyle !== "none"), true);
+      await page.context().route(socialUrl, (route) => route.fulfill({ contentType: "text/html", body: "Official profile destination" }));
+      const [profile] = await Promise.all([page.waitForEvent("popup"), socialLink.press("Enter")]);
+      await profile.waitForURL(socialUrl);
+      assert.equal(await profile.evaluate(() => window.opener === null), true);
+      await profile.close();
+      assert.equal(await brandInfo.getByRole("link").count(), 1, "WeChat stays unchanged until its destination is provided");
       const trigger = page.locator("#siteEggTrigger");
       assert.equal(await trigger.count(), 1);
       assert.equal(await page.locator(".top-actions > #siteEggTrigger").count(), 1);

@@ -302,6 +302,128 @@ p {
   white-space: nowrap;
 }
 
+.brand-public-info a,
+.brand-public-info button {
+  color: inherit;
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.brand-public-info button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.brand-public-info a:hover,
+.brand-public-info a:focus-visible,
+.brand-public-info button:hover,
+.brand-public-info button:focus-visible {
+  text-decoration: underline;
+}
+
+.brand-public-info a:focus-visible,
+.brand-public-info button:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+
+.mini-program-dialog {
+  width: min(400px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  overflow: auto;
+}
+
+.mini-program-dialog::backdrop {
+  background: rgba(13, 15, 16, 0.68);
+}
+
+.mini-program-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.mini-program-header p {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mini-program-header h2 {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.mini-program-close {
+  flex: 0 0 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mini-program-code {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  resize: none;
+}
+
+.mini-program-copy {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 16px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mini-program-copy:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.mini-program-dialog :is(button, textarea):focus-visible {
+  outline: 2px solid var(--bg);
+  outline-offset: 3px;
+}
+
+.mini-program-status {
+  min-height: 20px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .stats {
   display: flex;
   flex: 0 0 auto;
