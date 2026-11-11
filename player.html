@@ -20,18 +20,12 @@
         </div>
       </div>
       <div class="top-actions">
-        <nav class="site-nav" aria-label="画册切换">
+        <nav class="site-nav" aria-label="主导航">
           <a class="top-link" href="index.html">官方画册</a>
           <a class="top-link is-active" href="player.html" aria-current="page">玩家分享</a>
           <a class="top-link" href="brand-story.html">品牌故事</a>
+          <a class="top-link top-link--utility" href="vip.html">VIP 定制登记</a>
         </nav>
-        <a class="top-link top-link--utility" href="vip.html">VIP 定制登记</a>
-        <div class="stats" aria-live="polite">
-          <span id="visibleCount">0</span>
-          <span class="muted">/</span>
-          <span id="totalCount">0</span>
-          <span class="stats-unit">组</span>
-        </div>
       </div>
     </header>
 
@@ -76,7 +70,15 @@
         </label>
       </section>
 
-      <section class="summary" id="summaryText">正在加载玩家分享数据...</section>
+      <section class="results-bar" aria-label="浏览结果">
+        <p class="summary" id="summaryText">正在加载玩家分享数据...</p>
+        <div class="stats" aria-label="图文数量" aria-live="polite">
+          <span id="visibleCount">0</span>
+          <span class="muted">/</span>
+          <span id="totalCount">0</span>
+          <span class="stats-unit">组</span>
+        </div>
+      </section>
 
       <section class="gallery" id="gallery" aria-label="玩家分享图文列表"></section>
 

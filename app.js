@@ -6,6 +6,7 @@ const state = {
   collection: "all",
   category: "all",
   categories: [],
+  releaseType: "regular",
   year: "all",
   page: 1,
   pageSize: 20,
@@ -22,6 +23,7 @@ const els = {
   searchInput: document.querySelector("#searchInput"),
   pageSizeSelect: document.querySelector("#pageSizeSelect"),
   categorySelect: document.querySelector("#categorySelect"),
+  releaseNav: document.querySelector("#releaseNav"),
   collectionFilter: document.querySelector("#collectionFilter"),
   yearFilter: document.querySelector("#yearFilter"),
   playerAlbum: document.querySelector("#playerAlbum"),
@@ -73,7 +75,7 @@ function groupText(value) {
 }
 
 function groupKey(item) {
-  return [item.collection, item.articleId, item.date, item.title, item.caption].map(groupText).join("|");
+  return [item.collection, item.articleId, item.date, item.title, item.caption, item.releaseType || "regular"].map(groupText).join("|");
 }
 
 function createGroups(items) {
@@ -88,8 +90,10 @@ function createGroups(items) {
         collection: item.collection || "未分类",
         year: item.year,
         date: item.date,
+        datePrecision: item.datePrecision,
         title: item.title,
         caption: item.caption,
+        releaseType: item.releaseType || "regular",
         articleId: item.articleId || null,
         sourceIndex: item.sourceIndex,
         index: item.index,
@@ -117,11 +121,18 @@ function sortOfficialGroups(groups) {
       previousYear = group.year;
       previousDateKey = null;
     }
+    // Year-only uploads follow dated works in that year, without inventing a day.
+    if (group.datePrecision === "year") return { group, dateKey: Number(group.year) * 10000 + 9999 };
     const explicitDateKey = datedGroup(group)?.key;
     if (explicitDateKey !== undefined) previousDateKey = explicitDateKey;
     return { group, dateKey: explicitDateKey ?? previousDateKey ?? Number(group.year) * 10000 };
   }).sort((a, b) => a.dateKey - b.dateKey || a.group.sourceIndex - b.group.sourceIndex)
     .map(({ group }) => group);
+}
+
+function groupDate(group, includeYear = false) {
+  if (group.datePrecision === "year" || group.date === group.year) return `${group.year} 年`;
+  return `${group.date}${includeYear ? ` · ${group.year}` : ""}`;
 }
 
 function searchableText(group) {
@@ -157,6 +168,11 @@ function workCopy(group) {
   };
 }
 
+function usesCaptionPlaceholder(group) {
+  const item = group.items?.[0] || group;
+  return !els.playerAlbum && !String(item.workId || "").startsWith("upload:");
+}
+
 function renderYearFilter(years) {
   if (!els.yearFilter) return;
   const options = ["all", ...years]
@@ -168,6 +184,60 @@ function renderYearFilter(years) {
   els.yearFilter.querySelectorAll("option").forEach((option) => option.remove());
   els.yearFilter.insertAdjacentHTML("beforeend", options);
   els.yearFilter.value = state.year;
+}
+
+function releaseGroups() {
+  return els.releaseNav ? state.groups.filter((group) => group.releaseType === state.releaseType) : state.groups;
+}
+
+function releaseLabel(type = state.releaseType) {
+  return type === "invited" ? "邀约作品" : "常规发售";
+}
+
+function renderReleaseNav() {
+  if (!els.releaseNav) return;
+  for (const link of els.releaseNav.querySelectorAll("[data-release-type]")) {
+    if (link.dataset.releaseType === state.releaseType) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+    const url = new URL(window.location.href);
+    if (link.dataset.releaseType === "invited") url.searchParams.set("release", "invited");
+    else url.searchParams.delete("release");
+    link.href = url.href;
+  }
+}
+
+function renderScopeFilters() {
+  const groups = releaseGroups();
+  const years = [...new Set(groups.flatMap((group) => group.years))].sort();
+  if (els.releaseNav && state.year !== "all" && !years.includes(state.year)) state.year = "all";
+  if (els.categorySelect) {
+    const counts = new Map();
+    for (const group of groups) {
+      for (const category of group.categories) counts.set(category, (counts.get(category) || 0) + 1);
+    }
+    state.categories = [...counts.keys()].sort((a, b) => (a === "其他图文") - (b === "其他图文") || counts.get(b) - counts.get(a) || a.localeCompare(b, "zh-CN"));
+    if (!state.categories.includes(state.category)) state.category = "all";
+  }
+  renderYearFilter(years);
+}
+
+function setReleaseType(type, updateUrl = false) {
+  if (!els.releaseNav) return;
+  const nextType = type === "invited" ? "invited" : "regular";
+  if (nextType !== state.releaseType) {
+    state.releaseType = nextType;
+    state.page = 1;
+    renderScopeFilters();
+    renderDiscovery();
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      if (nextType === "invited") url.searchParams.set("release", "invited");
+      else url.searchParams.delete("release");
+      window.history.pushState(null, "", url);
+    }
+  }
+  renderReleaseNav();
+  applyFilters();
 }
 
 function renderCollectionFilter(collections) {
@@ -234,11 +304,11 @@ function renderCards(items) {
       <article class="card card-list ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
         <div class="thumb"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" /></div>
         <div class="card-body">
-          <p class="meta">${escapeHtml(item.date)}</p>
+          <p class="meta">${escapeHtml(groupDate(item))}</p>
           <div class="list-details">
             <span class="list-count">${escapeHtml(item.year)} · ${item.imageCount} 张</span>
             <h3>${window.BelongsReading.headingHtml(copy.title)}</h3>
-            <p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>
+            ${copy.caption || usesCaptionPlaceholder(item) ? `<p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>` : ""}
           </div>
           <svg class="list-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
         </div>
@@ -258,9 +328,9 @@ function renderCards(items) {
             ${item.imageCount > 1 ? `<span class="image-count">${item.imageCount} 张</span>` : ""}
           </div>
           <div class="card-body">
-            <p class="meta">${escapeHtml(item.date)} · ${escapeHtml(item.year)}</p>
+            <p class="meta">${escapeHtml(groupDate(item, true))}</p>
             <h3>${window.BelongsReading.headingHtml(copy.title)}</h3>
-            <p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>
+            ${copy.caption || usesCaptionPlaceholder(item) ? `<p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>` : ""}
           </div>
         </article>
       `;
@@ -288,6 +358,7 @@ function setView(view, updateUrl = false) {
     else url.searchParams.delete("view");
     window.history.pushState(null, "", url);
   }
+  renderReleaseNav();
   renderCards(pageItems());
 }
 
@@ -303,13 +374,14 @@ function renderDiscovery() {
   if (!els.discovery) return;
   const now = new Date();
   const todayKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-  const dated = state.groups.map(datedGroup).filter(Boolean);
+  const dated = releaseGroups().map(datedGroup).filter(Boolean);
   const eligible = dated.filter((entry) => entry.key <= todayKey);
   const dailyPool = eligible.length ? eligible : dated;
   if (!dailyPool.length) {
     els.discovery.hidden = true;
     return;
   }
+  els.discovery.hidden = false;
 
   const freshPool = dailyPool.filter((entry) => entry.group.id !== state.lastDiscoveryId);
   const selectable = freshPool.length ? freshPool : dailyPool;
@@ -371,7 +443,8 @@ function renderPagination() {
 
 function applyFilters() {
   const query = normalize(state.query);
-  const matching = state.groups.filter((item) => {
+  const scoped = releaseGroups();
+  const matching = scoped.filter((item) => {
     const collectionMatches = state.collection === "all" || item.collection === state.collection;
     const yearMatches = state.year === "all" || item.years.includes(state.year);
     const queryMatches = !query || searchableText(item).includes(query);
@@ -382,9 +455,15 @@ function applyFilters() {
   state.page = Math.min(Math.max(1, state.page), totalPages());
 
   els.visibleCount.textContent = state.filtered.length;
-  els.totalCount.textContent = state.groups.length;
+  els.totalCount.textContent = scoped.length;
   els.summaryText.textContent = buildSummary();
   els.emptyState.hidden = state.filtered.length > 0;
+  if (els.releaseNav) {
+    const uncollected = scoped.length === 0;
+    els.emptyState.classList.toggle("empty--uncollected", uncollected);
+    els.emptyState.querySelector("h2").textContent = uncollected ? `${releaseLabel()}尚未收录` : "没有找到匹配的图文";
+    els.emptyState.querySelector("p").hidden = uncollected;
+  }
   renderCollectionFilter([...new Set(state.items.map((item) => item.collection || "未分类"))].sort());
   renderCollectionSpotlight();
   renderPagination();
@@ -399,7 +478,8 @@ function buildSummary() {
     return `${collectionLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
   }
   const yearLabel = state.year === "all" ? "全部年份" : `${state.year} 年`;
-  const scopeLabel = collectionLabel ? `${collectionLabel} · ` : "";
+  if (els.releaseNav && !releaseGroups().length) return `${releaseLabel()} · 0 组图文`;
+  const scopeLabel = els.releaseNav ? `${releaseLabel()} · ` : collectionLabel ? `${collectionLabel} · ` : "";
   const categoryLabel = state.category === "all" ? "" : ` · ${state.category}`;
   return `${scopeLabel}${yearLabel}${categoryLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
 }
@@ -429,7 +509,7 @@ function moveDetailImage(delta) {
 
 function renderDetailCaption(group) {
   const copy = workCopy(group);
-  const caption = copy.caption || (els.playerAlbum ? "" : "无文字说明");
+  const caption = copy.caption || (usesCaptionPlaceholder(group) ? "无文字说明" : "");
   const article = state.articles.get(group.articleId);
   const work = article?.works.find((candidate) => candidate.id === group.items[0].workId);
   const result = window.BelongsReading.format(caption, {
@@ -438,7 +518,7 @@ function renderDetailCaption(group) {
     trustedSpecs: Boolean(work),
   });
   els.detailCaption.innerHTML = result.html;
-  els.detailCaption.hidden = Boolean(els.playerAlbum && !copy.caption);
+  els.detailCaption.hidden = !caption;
   els.dialog.classList.toggle("detail--long", result.long);
 }
 
@@ -452,7 +532,7 @@ function openDetail(group) {
     els.detailMeta.textContent = group.collection;
     els.detailIndex.textContent = `第 ${String(group.index).padStart(2, "0")} 组 · ${group.imageCount} 张图片`;
   } else {
-    els.detailMeta.textContent = `${group.date} · ${group.year}`;
+    els.detailMeta.textContent = `${groupDate(group, true)} · ${releaseLabel(group.releaseType)}`;
     els.detailIndex.textContent = `${group.year} 第 ${String(group.index).padStart(3, "0")} 组 · ${group.imageCount} 张图片 · 全集 Item ${sourceRange(group)}`;
     els.openArticle.hidden = !group.articleId;
   }
@@ -622,13 +702,23 @@ function bindImageInspection() {
 
 function bindEvents() {
   bindImageInspection();
+  if (els.releaseNav) {
+    els.releaseNav.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-release-type]");
+      if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      setReleaseType(link.dataset.releaseType, true);
+    });
+  }
   if (els.viewSwitch) {
     els.viewSwitch.addEventListener("click", (event) => {
       const button = event.target.closest("[data-view]");
       if (button) setView(button.dataset.view, true);
     });
     window.addEventListener("popstate", () => {
-      setView(new URLSearchParams(window.location.search).get("view"));
+      const params = new URLSearchParams(window.location.search);
+      setReleaseType(params.get("release"));
+      setView(params.get("view"));
     });
   }
 
@@ -749,11 +839,6 @@ async function init() {
   state.groups = els.playerAlbum ? groups : sortOfficialGroups(groups);
   if (els.categorySelect) {
     state.groups = state.groups.map((group) => ({ ...group, categories: window.BELONGS_CATEGORIES.forGroup(group) }));
-    const counts = new Map();
-    for (const group of state.groups) {
-      for (const category of group.categories) counts.set(category, (counts.get(category) || 0) + 1);
-    }
-    state.categories = [...counts.keys()].sort((a, b) => (a === "其他图文") - (b === "其他图文") || counts.get(b) - counts.get(a) || a.localeCompare(b, "zh-CN"));
   }
   state.filtered = state.items;
   const collections = [...new Set(state.groups.map((group) => group.collection))];
@@ -763,8 +848,9 @@ async function init() {
     state.query = query;
     els.searchInput.value = query;
   }
+  if (els.releaseNav && new URLSearchParams(window.location.search).get("release") === "invited") state.releaseType = "invited";
   if (els.viewSwitch) setView(new URLSearchParams(window.location.search).get("view"));
-  renderYearFilter([...new Set(state.items.map((item) => item.year))].sort());
+  renderScopeFilters();
   renderDiscovery();
   applyFilters();
 }

@@ -15,8 +15,7 @@ if (nav) {
   trigger.setAttribute("aria-label", "打开 Belongs 印记");
   trigger.textContent = "✧";
 
-  const links = [...nav.querySelectorAll(".top-link")];
-  nav.insertBefore(trigger, links[Math.floor(Math.random() * (links.length + 1))] || null);
+  nav.insertAdjacentElement(Math.random() < 0.5 ? "beforebegin" : "afterend", trigger);
 
   const dialog = document.createElement("dialog");
   dialog.id = "siteEggDialog";

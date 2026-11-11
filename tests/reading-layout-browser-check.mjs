@@ -27,7 +27,8 @@ try {
         const copy = workCopy(group);
         els.detailTitle.innerHTML = window.BelongsReading.headingHtml(copy.title);
         renderDetailCaption(group);
-        if (els.detailCaption.textContent !== (copy.caption || "无文字说明")) failures.push(`${group.id}: text changed`);
+        const fallback = group.items[0].workId?.startsWith("upload:") ? "" : "无文字说明";
+        if (els.detailCaption.textContent !== (copy.caption || fallback)) failures.push(`${group.id}: text changed`);
         const type = els.detailCaption.querySelector('dt[data-label="制作类型："]');
         if (type) {
           const labels = [...type.closest("dl").querySelectorAll("dt")].map((node) => (node.dataset.label || node.textContent).replace(/^[ \t]*[*＊]?[ \t]*/, "").trim());
@@ -47,7 +48,7 @@ try {
       }
       return { count: state.groups.length, failures };
     });
-    assert.equal(audit.count, 766);
+    assert.equal(audit.count, 767);
     assert.deepEqual(audit.failures, [], `${width}px corpus audit`);
     await page.locator("#closeDialog").click();
     for (const id of ["2023-043-7327f96269", "2023-035-d5db39d114", "2023-013-361b50f596", "2021-225-3d46972a33", "2022-068-bedc317626", "2026-002-814025bed3"]) {

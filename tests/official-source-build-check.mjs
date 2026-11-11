@@ -34,13 +34,18 @@ try {
   }
   const curated = JSON.parse(readFileSync(path.join(output, "data/curated-official.json"), "utf8"));
   assert.deepEqual(curated.articles, JSON.parse(readFileSync(path.join(root, "data/curated-official.json"), "utf8")).articles);
-  assert.equal(curated.items.length, 48);
+  assert.equal(curated.items.filter((item) => item.articleId).length, 48);
+  const uploaded = readdirSync(path.join(source, "entries")).filter((name) => name.startsWith("upload-") && name.endsWith(".json"))
+    .flatMap((name) => JSON.parse(readFileSync(path.join(source, "entries", name), "utf8")));
+  assert.equal(curated.items.filter((item) => !item.articleId).length, uploaded.reduce((count, entry) => count + entry.images.length, 0));
   const context = vm.createContext({ window: {} });
   vm.runInContext(readFileSync(path.join(output, "data/items.js"), "utf8"), context);
   assert.equal(context.window.BELONGS_DATA.items.length, backup.items.length);
   const once = hash(path.join(output, "data/items.json"));
+  const curatedOnce = hash(path.join(output, "data/curated-official.json"));
   build();
   assert.equal(hash(path.join(output, "data/items.json")), once, "rebuilding should be deterministic");
+  assert.equal(hash(path.join(output, "data/curated-official.json")), curatedOnce);
 
   const records = readdirSync(path.join(source, "entries")).filter((file) => file.startsWith("legacy-") && file.endsWith(".json"))
     .flatMap((file) => JSON.parse(readFileSync(path.join(source, "entries", file), "utf8")));

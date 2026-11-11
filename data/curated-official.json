@@ -1562,6 +1562,46 @@
       "thumbHeight": 540,
       "articleId": "wechat:zAgTUUI6DRLU7rFtnm-LSg",
       "workId": "wechat:zAgTUUI6DRLU7rFtnm-LSg:08"
+    },
+    {
+      "id": "upload:2026-xianjin-wing:front",
+      "workId": "upload:2026-xianjin-wing",
+      "year": "2026",
+      "date": "2026",
+      "datePrecision": "year",
+      "index": 218,
+      "sourceIndex": 1060,
+      "title": "先金羽翼",
+      "caption": "",
+      "releaseType": "invited",
+      "image": "assets/official-uploads/2026-xianjin-wing/1-front.jpg",
+      "thumb": "assets/official-uploads/2026-xianjin-wing/1-thumb-front-thumb.jpg",
+      "width": 3024,
+      "height": 4032,
+      "largeWidth": 3024,
+      "largeHeight": 4032,
+      "thumbWidth": 720,
+      "thumbHeight": 960
+    },
+    {
+      "id": "upload:2026-xianjin-wing:back",
+      "workId": "upload:2026-xianjin-wing",
+      "year": "2026",
+      "date": "2026",
+      "datePrecision": "year",
+      "index": 219,
+      "sourceIndex": 1061,
+      "title": "先金羽翼",
+      "caption": "",
+      "releaseType": "invited",
+      "image": "assets/official-uploads/2026-xianjin-wing/2-back.jpg",
+      "thumb": "assets/official-uploads/2026-xianjin-wing/2-thumb-back-thumb.jpg",
+      "width": 3024,
+      "height": 4032,
+      "largeWidth": 3024,
+      "largeHeight": 4032,
+      "thumbWidth": 720,
+      "thumbHeight": 960
     }
   ]
 }

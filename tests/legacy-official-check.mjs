@@ -16,13 +16,13 @@ try {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`file://${path.join(root, "index.html")}`);
     await page.locator("#closeIntro").click();
-    const dates = await page.evaluate(() => state.groups.map((group) => {
+    const dates = await page.evaluate(() => releaseGroups().map((group) => {
       const match = group.date.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日$/);
       return match ? Number(match[1]) * 10000 + Number(match[2]) * 100 + Number(match[3]) : null;
     }));
     assert.equal(dates.every((date) => date !== null), true, "recovered publication dates must be explicit");
     assert.deepEqual(dates, [...dates].sort((a, b) => a - b), "all historical/new groups must sort together by publication date");
-    assert.equal(await page.evaluate(() => new Set(state.items.map((item) => item.id)).size), 1059);
+    assert.equal(await page.evaluate(() => new Set(state.items.filter((item) => item.releaseType !== "invited").map((item) => item.id)).size), 1059);
     for (const view of ["grid", "list"]) {
       await page.locator(`#viewSwitch [data-view="${view}"]`).click();
       await page.locator("#searchInput").fill("侘寂之美");

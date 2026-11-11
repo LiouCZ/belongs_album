@@ -31,6 +31,12 @@
             "articleTitle": { "type": "string" },
             "paragraphIndexes": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "uniqueItems": true }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "upload" } }
         }
       ]
     },
@@ -38,6 +44,7 @@
     "year": { "type": "string", "pattern": "^20[0-9]{2}$" },
     "title": { "type": "string", "minLength": 1 },
     "description": { "type": "string" },
+    "releaseType": { "enum": ["regular", "invited"], "default": "regular" },
     "images": {
       "type": "array",
       "minItems": 1,
@@ -94,5 +101,14 @@
   "allOf": [{
     "if": { "properties": { "source": { "properties": { "kind": { "const": "wechat" } } } } },
     "then": { "properties": { "description": { "minLength": 1 } } }
+  }, {
+    "if": { "properties": { "source": { "properties": { "kind": { "const": "upload" } } } } },
+    "then": {
+      "properties": {
+        "id": { "pattern": "^upload:[a-z0-9][a-z0-9-]*$" },
+        "images": { "items": { "required": ["sha256", "width", "height", "thumbnail"] } }
+      },
+      "allOf": [{ "if": { "properties": { "date": { "type": "null" } } }, "then": { "required": ["year"] } }]
+    }
   }]
 }

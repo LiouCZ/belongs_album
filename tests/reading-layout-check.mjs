@@ -35,6 +35,13 @@ for (const article of curated.articles) {
   }
 }
 
+for (const item of curated.items.filter((item) => !item.articleId)) {
+  const result = reading.format(item.caption, { id: item.workId });
+  assert.equal(plain(result.html), item.caption, `${item.id}: uploaded descriptions remain lossless`);
+  if (item.workId === "upload:2026-xianjin-wing") assert.equal(item.caption, "", "user requested name-only display");
+  assert.doesNotMatch(result.html, /detail-theme/, "uploaded work must not acquire a fabricated article theme");
+}
+
 const longTitle = legacy.find((item) => item.id === "2023-043-7327f96269").title;
 assert.equal(reading.title(longTitle).heading, "2.狗牌");
 assert.match(reading.title(longTitle).description, /梦想与现实/);

@@ -20,22 +20,20 @@
         </div>
       </div>
       <div class="top-actions">
-        <nav class="site-nav" aria-label="画册切换">
+        <nav class="site-nav" aria-label="主导航">
           <a class="top-link is-active" href="index.html" aria-current="page">官方画册</a>
           <a class="top-link" href="player.html">玩家分享</a>
           <a class="top-link" href="brand-story.html">品牌故事</a>
+          <a class="top-link top-link--utility" href="vip.html">VIP 定制登记</a>
         </nav>
-        <a class="top-link top-link--utility" href="vip.html">VIP 定制登记</a>
-        <div class="stats" aria-live="polite">
-          <span id="visibleCount">0</span>
-          <span class="muted">/</span>
-          <span id="totalCount">0</span>
-          <span class="stats-unit">组</span>
-        </div>
       </div>
     </header>
 
     <main class="official-album" id="albumMain">
+      <nav class="release-nav" id="releaseNav" aria-label="官方作品分类">
+        <a href="index.html" data-release-type="regular" aria-current="page">常规发售</a>
+        <a href="index.html?release=invited" data-release-type="invited">邀约作品</a>
+      </nav>
       <section class="controls" aria-label="检索筛选">
         <label class="search-wrap">
           <span>搜索</span>
@@ -96,13 +94,21 @@
           <h2 class="list-view-heading">作品目录</h2>
           <p class="summary" id="summaryText">正在加载图文数据...</p>
         </div>
-        <div class="view-switch" id="viewSwitch" role="group" aria-label="展示方式">
-          <button type="button" data-view="grid" aria-label="网格视图" title="网格视图" aria-pressed="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          </button>
-          <button type="button" data-view="list" aria-label="目录视图" title="目录视图" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-          </button>
+        <div class="results-actions">
+          <div class="stats" aria-label="图文数量" aria-live="polite">
+            <span id="visibleCount">0</span>
+            <span class="muted">/</span>
+            <span id="totalCount">0</span>
+            <span class="stats-unit">组</span>
+          </div>
+          <div class="view-switch" id="viewSwitch" role="group" aria-label="展示方式">
+            <button type="button" data-view="grid" aria-label="网格视图" title="网格视图" aria-pressed="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </button>
+            <button type="button" data-view="list" aria-label="目录视图" title="目录视图" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            </button>
+          </div>
         </div>
       </section>
 

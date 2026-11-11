@@ -23,6 +23,7 @@ assert.deepEqual(categories("⓫角链"), ["角链"]);
 assert.deepEqual(categories("初心羽毛套装"), ["初心羽"]);
 assert.deepEqual(categories("初心羽戒指"), ["初心羽戒指"]);
 assert.deepEqual(categories("羽翼戒指", "羽翼造型手镯"), ["羽翼戒指"]);
+assert.deepEqual(categories("先金羽翼"), ["先金羽翼"]);
 assert.deepEqual(categories("蛇骨链"), ["蛇骨项链"]);
 assert.deepEqual(categories("马头吊坠"), ["马首"]);
 assert.deepEqual(categories("发售", "●主件\n1.S十字\n自由的羽毛\n*搭配：M十字、角链\n2.L十字\n●配件\n③贝贝羽"), ["S十字", "L十字", "贝贝羽"]);

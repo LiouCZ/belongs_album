@@ -85,7 +85,7 @@ def validate(paths: list[Path]) -> None:
                     indexes = [image.get("sourceImageIndex") for image in record["images"]]
                     if indexes != record["source"]["sourceImageIndexes"]:
                         raise ValueError(f"Word image indexes do not match: {path}")
-                elif any(not image.get("sourceImageId") or not image.get("crop") or not image.get("sha256") for image in record["images"]):
+                elif record["source"]["kind"] == "wechat" and any(not image.get("sourceImageId") or not image.get("crop") or not image.get("sha256") for image in record["images"]):
                     raise ValueError(f"WeChat work missing screenshot provenance: {path}")
         print(f"OK {path} ({len(records)} record(s))")
 

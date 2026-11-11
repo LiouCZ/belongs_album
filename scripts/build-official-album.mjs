@@ -71,6 +71,9 @@ export async function buildOfficialAlbum({ site = defaultSite, source = path.res
       }
       entryIds.add(entry.id);
       entryCount += 1;
+      if (entry.releaseType !== undefined && !["regular", "invited"].includes(entry.releaseType)) {
+        throw new Error(`Invalid release type: ${entry.id}`);
+      }
       const year = entry.year ?? entry.date?.slice(0, 4);
       if (!/^20\d{2}$/.test(year) || typeof entry.title !== "string" || !entry.title.trim() || typeof entry.description !== "string") {
         throw new Error(`Incomplete legacy entry: ${entry.id}`);
@@ -103,6 +106,7 @@ export async function buildOfficialAlbum({ site = defaultSite, source = path.res
           largeWidth: image.width, largeHeight: image.height,
           thumbWidth: image.thumbnail.width, thumbHeight: image.thumbnail.height,
           workId: entry.id,
+          ...(entry.releaseType === undefined ? {} : { releaseType: entry.releaseType }),
         });
       }
     }

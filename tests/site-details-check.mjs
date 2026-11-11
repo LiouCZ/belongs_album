@@ -84,7 +84,8 @@ async function run() {
       assert.match(await brandInfo.textContent(), /微信公众号：BELONGS OFFICIAL/);
       const trigger = page.locator("#siteEggTrigger");
       assert.equal(await trigger.count(), 1);
-      assert.equal(await page.locator(".site-nav > #siteEggTrigger").count(), 1);
+      assert.equal(await page.locator(".top-actions > #siteEggTrigger").count(), 1);
+      assert.equal(await page.locator(".site-nav > a").count(), 4);
       await trigger.click();
       const egg = page.locator("#siteEggDialog");
       assert.equal(await egg.isVisible(), true);
@@ -93,12 +94,12 @@ async function run() {
       await page.close();
     }
 
-    for (const [randomValue, expectedIndex] of [[0, 0], [0.99, 3]]) {
+    for (const [randomValue, expectedIndex] of [[0, 0], [0.99, 1]]) {
       const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.addInitScript((value) => { Math.random = () => value; }, randomValue);
       await page.goto(`file://${path.join(root, "brand-story.html")}`);
-      assert.equal(await page.locator(".site-nav > *").evaluateAll((children) => children.findIndex((child) => child.id === "siteEggTrigger")), expectedIndex);
+      assert.equal(await page.locator(".top-actions > *").evaluateAll((children) => children.findIndex((child) => child.id === "siteEggTrigger")), expectedIndex);
       await page.close();
     }
 
