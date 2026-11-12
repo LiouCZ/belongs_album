@@ -80,9 +80,9 @@ async function run() {
     for (const filename of ["index.html", "player.html", "brand-story.html"]) {
       const page = await openPage(browser, filename, { width: 390, height: 844 });
       const brandInfo = page.locator(".brand-public-info");
-      assert.match(await brandInfo.textContent(), /小红书号：BELONGS/);
-      assert.match(await brandInfo.textContent(), /微信公众号：BELONGS OFFICIAL/);
-      const socialLink = brandInfo.getByRole("link", { name: "BELONGS", exact: true });
+      assert.match(await brandInfo.innerText(), /小红书号\s+BELONGS/);
+      assert.match(await brandInfo.innerText(), /微信公众号\s+BELONGS OFFICIAL/);
+      const socialLink = brandInfo.getByRole("link", { name: "小红书：BELONGS（新标签页）", exact: true });
       const socialUrl = "https://www.xiaohongshu.com/user/profile/651a074a00000000240173a2";
       assert.equal(await socialLink.count(), 1, "the official Xiaohongshu account should be a link");
       assert.equal(await socialLink.getAttribute("href"), socialUrl);
@@ -91,9 +91,10 @@ async function run() {
       assert.match(await socialLink.getAttribute("rel"), /\bnoreferrer\b/);
       assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).color),
         await brandInfo.evaluate((info) => getComputedStyle(info).color), "keep the original account text color");
-      assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).textDecorationLine), "none");
+      const socialValue = socialLink.locator(".brand-contact-value");
+      assert.equal(await socialValue.evaluate((node) => getComputedStyle(node).textDecorationLine), "underline");
       await socialLink.hover();
-      assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).textDecorationLine), "underline");
+      assert.equal(await socialValue.evaluate((node) => getComputedStyle(node).textDecorationLine), "underline");
       await socialLink.focus();
       assert.equal(await socialLink.evaluate((link) => getComputedStyle(link).outlineStyle !== "none"), true);
       await page.context().route(socialUrl, (route) => route.fulfill({ contentType: "text/html", body: "Official profile destination" }));
@@ -101,7 +102,7 @@ async function run() {
       await profile.waitForURL(socialUrl);
       assert.equal(await profile.evaluate(() => window.opener === null), true);
       await profile.close();
-      assert.equal(await brandInfo.getByRole("link").count(), 1, "WeChat stays unchanged until its destination is provided");
+      assert.equal(await brandInfo.getByRole("link").count(), 2, "Xiaohongshu and the mini program use links; both WeChat accounts use QR buttons");
       const trigger = page.locator("#siteEggTrigger");
       assert.equal(await trigger.count(), 1);
       assert.equal(await page.locator(".top-actions > #siteEggTrigger").count(), 1);

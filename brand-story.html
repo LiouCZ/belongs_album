@@ -9,26 +9,45 @@
     <noscript><style>.story-sketch .sketch-original { opacity: 1; }</style></noscript>
   </head>
   <body>
-    <header class="topbar">
+    <header class="topbar album-header">
       <div class="brand">
         <div class="brand-mark">
           <img class="brand-logo" src="assets/belongs-logo.png" alt="Belongs logo" />
         </div>
-        <div>
-          <h1>品牌故事</h1>
-          <p>手作银饰 · 创作与影像</p>
-          <p class="brand-public-info"><span>小红书号：<a href="https://www.xiaohongshu.com/user/profile/651a074a00000000240173a2" target="_blank" rel="noopener noreferrer" title="打开 BELONGS 小红书主页（新标签页）">BELONGS</a></span><span>微信公众号：BELONGS OFFICIAL</span><span>微信小程序：<button type="button" data-mini-program aria-haspopup="dialog" aria-controls="miniProgramDialog" aria-expanded="false">BELONGS B&amp;K</button></span></p>
+        <div class="brand-copy">
+          <h1>BELONGS B&amp;K</h1>
+          <p class="brand-description">手作银饰 · 创作与影像</p>
         </div>
       </div>
-      <div class="top-actions">
-        <nav class="site-nav" aria-label="主导航">
-          <a class="top-link" href="index.html">官方画册</a>
-          <a class="top-link" href="player.html">玩家分享</a>
-          <a class="top-link is-active" href="brand-story.html" aria-current="page">品牌故事</a>
-          <a class="top-link top-link--utility" href="vip.html">VIP 定制登记</a>
-        </nav>
-      </div>
+      <section class="brand-overview" aria-label="官方账号">
+        <div class="brand-public-info" aria-label="官方账号">
+          <a class="brand-contact brand-contact--action" href="https://www.xiaohongshu.com/user/profile/651a074a00000000240173a2" target="_blank" rel="noopener noreferrer" aria-label="小红书：BELONGS（新标签页）" title="打开 BELONGS 小红书主页（新标签页）">
+            <span class="brand-contact-label"><img class="brand-contact-icon" src="assets/icons/book-open.svg" alt="" width="16" height="16" />小红书号<img class="brand-contact-cue" src="assets/icons/external-link.svg" alt="" width="12" height="12" /></span>
+            <span class="brand-contact-value">BELONGS</span>
+          </a>
+          <button class="brand-contact brand-contact--action" type="button" data-wechat-account aria-label="BELONGS OFFICIAL" aria-controls="officialWechatAccountQr" aria-describedby="officialWechatAccountQr" aria-expanded="false">
+            <span class="brand-contact-label"><img class="brand-contact-icon" src="assets/icons/rss.svg" alt="" width="16" height="16" />微信公众号<img class="brand-contact-cue" src="assets/icons/qr-code.svg" alt="" width="12" height="12" /></span>
+            <span class="brand-contact-value">BELONGS OFFICIAL</span>
+          </button>
+          <button class="brand-contact brand-contact--action" type="button" data-wechat-contact aria-label="BELONGS-OFFICIAL" aria-controls="officialWechatQr" aria-describedby="officialWechatQr" aria-expanded="false">
+            <span class="brand-contact-label"><img class="brand-contact-icon" src="assets/icons/messages-square.svg" alt="" width="16" height="16" />官方微信<img class="brand-contact-cue" src="assets/icons/qr-code.svg" alt="" width="12" height="12" /></span>
+            <span class="brand-contact-value">BELONGS-OFFICIAL</span>
+          </button>
+          <a class="brand-contact brand-contact--action" href="https://d.weimob.com/d/1_11_10c9bva" target="_blank" rel="noopener noreferrer" data-mini-program aria-label="微信小程序：BELONGS B&amp;K（新标签页）" title="打开 BELONGS B&amp;K 微信小程序（新标签页）">
+            <span class="brand-contact-label"><img class="brand-contact-icon" src="assets/icons/smartphone.svg" alt="" width="16" height="16" />微信小程序<img class="brand-contact-cue" src="assets/icons/external-link.svg" alt="" width="12" height="12" /></span>
+            <span class="brand-contact-value">BELONGS B&amp;K</span>
+          </a>
+        </div>
+      </section>
     </header>
+    <div class="top-actions album-navigation">
+      <nav class="site-nav" aria-label="主导航">
+        <a class="top-link" href="index.html">官方画册</a>
+        <a class="top-link" href="player.html">玩家分享</a>
+        <a class="top-link is-active" href="brand-story.html" aria-current="page">品牌故事</a>
+        <a class="top-link top-link--utility" href="vip.html">VIP 定制登记</a>
+      </nav>
+    </div>
 
     <main class="story-main">
       <section class="philosophy-section" aria-label="创作理念">
@@ -250,7 +269,7 @@
     <script src="reading-layout.js"></script>
     <script src="brand-story.js"></script>
     <script src="story-ornaments.js"></script>
-    <script src="mini-program.js"></script>
+    <script src="wechat-contact.js"></script>
     <script src="site-stamp.js"></script>
     <script src="page-transition.js"></script>
   </body>

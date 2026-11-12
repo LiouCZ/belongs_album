@@ -30,14 +30,47 @@ try {
       assert.equal(await vip.isVisible(), true);
       assert.equal(await vip.evaluate((link) => getComputedStyle(link).borderTopWidth), "0px", "VIP should be a quiet text link, not a framed button");
       assert.equal(await page.locator(".topbar .stats").count(), 0, "album counts belong with the results, not in the header");
-      assert.equal(await page.evaluate((mobile) => {
+      assert.equal(await page.locator(".top-actions").evaluate((navigation) => {
+        const style = getComputedStyle(navigation);
+        const header = document.querySelector(".album-header");
+        const active = navigation.querySelector('[aria-current="page"]');
+        const selected = getComputedStyle(active);
+        const inactive = getComputedStyle(navigation.querySelector("a:not([aria-current])"));
+        return style.position === "sticky" && style.top === "0px" && !navigation.closest("header")
+          && style.borderTopWidth === "0px" && style.borderBottomWidth === "0px"
+          && getComputedStyle(header).borderBottomWidth === "0px"
+          && selected.backgroundColor === "rgb(244, 241, 234)" && selected.color === "rgb(17, 19, 21)"
+          && inactive.backgroundColor === "rgba(0, 0, 0, 0)"
+          && getComputedStyle(active, "::after").content === "none";
+      }), true, "pin the navigation without dividers and distinguish the selected page with the existing light-paper palette");
+      assert.equal(await page.evaluate(() => {
+        const title = getComputedStyle(document.querySelector(".brand h1"));
+        const introduction = getComputedStyle(document.querySelector(".brand-description"));
+        const category = document.querySelector(".release-nav");
+        const label = document.querySelector(".controls label > span");
+        const primary = getComputedStyle(document.querySelector('.site-nav [aria-current="page"]'));
+        const secondary = getComputedStyle(document.querySelector(".brand-contact-label"));
+        const luminance = (color) => color.match(/[\d.]+/g).slice(0, 3).map((channel) => {
+          const value = Number(channel) / 255;
+          return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+        }).reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+        const background = luminance(getComputedStyle(document.querySelector(".album-header")).backgroundColor);
+        return parseFloat(title.fontSize) >= parseFloat(introduction.fontSize) * 1.6
+          && Number(title.fontWeight) >= 600
+          && title.color !== introduction.color && introduction.color !== secondary.color
+          && [introduction.color, secondary.color].every((color) => {
+            const foreground = luminance(color);
+            return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05) >= 4.5;
+          })
+          && (!category || getComputedStyle(category).borderBottomWidth === "0px"
+            && parseFloat(primary.fontSize) >= parseFloat(getComputedStyle(category.querySelector("a")).fontSize))
+          && (!label || parseFloat(getComputedStyle(label).fontSize) <= 11);
+      }), true, "brand, page tabs, work type and filter labels have distinct visual levels");
+      assert.equal(await page.evaluate(() => {
         const boxes = [...document.querySelectorAll(".site-nav a")].map((node) => node.getBoundingClientRect());
         const same = (a, b) => Math.abs(a - b) < 1;
-        return mobile
-          ? same(boxes[0].top, boxes[1].top) && same(boxes[2].top, boxes[3].top)
-            && boxes[2].top >= boxes[0].bottom && same(boxes[0].left, boxes[2].left) && same(boxes[1].left, boxes[3].left)
-          : boxes.every((box) => same(box.top, boxes[0].top));
-      }, width <= 580), true, "navigation must form two aligned mobile rows or a single wider row");
+        return boxes.every((box) => same(box.top, boxes[0].top));
+      }), true, "navigation stays on one clear row on phones and desktop");
       assert.equal(await page.evaluate(() => {
         const controls = [...document.querySelectorAll(".top-actions .top-link, .site-egg-trigger, .stats")]
           .filter((node) => getComputedStyle(node).display !== "none").map((node) => node.getBoundingClientRect());
@@ -71,11 +104,23 @@ try {
           await page.locator("#searchInput").fill("");
         }
       }
+      await page.evaluate(() => window.scrollTo(0, 650));
+      await page.waitForFunction(() => Math.abs(document.querySelector(".top-actions").getBoundingClientRect().top) < 1);
+      assert.equal(await page.locator(".top-actions").evaluate((navigation) => {
+        const box = navigation.getBoundingClientRect();
+        return document.querySelector(".brand").getBoundingClientRect().bottom < 0
+          && box.height <= 64 && [...navigation.querySelectorAll(".site-nav a")].every((link) => {
+            const bounds = link.getBoundingClientRect();
+            const hit = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+            return bounds.top >= 0 && bounds.bottom <= box.bottom && link.contains(hit);
+          });
+      }), true, "the compact navigation stays visible and clickable after the brand introduction scrolls away");
+      await page.evaluate(() => window.scrollTo(0, 0));
       if (process.env.NAV_SCREENSHOT_DIR && [320, 390, 655, 1440].includes(width)) {
         mkdirSync(process.env.NAV_SCREENSHOT_DIR, { recursive: true });
         await page.locator(".top-actions .top-link--utility").focus();
         await page.mouse.click(2, 2);
-        await page.locator(".topbar").screenshot({ path: path.join(process.env.NAV_SCREENSHOT_DIR,
+        await page.locator(".top-actions").screenshot({ path: path.join(process.env.NAV_SCREENSHOT_DIR,
           `nav-${filename.replace(/[.?=]/g, "-")}-${width}.png`) });
         await page.screenshot({ path: path.join(process.env.NAV_SCREENSHOT_DIR,
           `page-${filename.replace(/[.?=]/g, "-")}-${width}.png`) });

@@ -9,6 +9,8 @@
   --accent: #0d0f10;
   --accent-dark: #0d0f10;
   --header-text: #f4f1ea;
+  --header-heading: #fff;
+  --header-secondary: #e8e6df;
   --header-muted: rgba(244, 241, 234, 0.72);
   --shadow: 0 18px 44px rgba(13, 15, 16, 0.2);
   color-scheme: light;
@@ -290,50 +292,346 @@ p {
   font-size: 13px;
 }
 
-.brand .brand-public-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 14px;
-  font-size: 11px;
-  line-height: 1.4;
+.brand-overview {
+  padding: 24px clamp(18px, 4vw, 56px) 22px;
+  border-bottom: 1px solid rgba(13, 15, 16, 0.18);
+  background: var(--bg);
+  color: var(--header-text);
 }
 
-.brand-public-info span {
-  white-space: nowrap;
+.brand-description {
+  max-width: 760px;
+  font-size: 15px;
+  line-height: 1.9;
+  text-wrap: balance;
 }
 
-.brand-public-info a,
-.brand-public-info button {
+.brand-description + .brand-public-info {
+  margin-top: 22px;
+}
+
+.brand-public-info {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  gap: 18px 40px;
+}
+
+.brand-contact {
+  display: grid;
+  min-width: 0;
+  min-height: 48px;
+  align-content: center;
+  justify-items: start;
+  gap: 6px;
   color: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
   text-decoration: none;
-  text-underline-offset: 3px;
 }
 
-.brand-public-info button {
+button.brand-contact {
   padding: 0;
   border: 0;
   background: transparent;
-  font: inherit;
+}
+
+.brand-contact--action {
   cursor: pointer;
 }
 
-.brand-public-info a:hover,
-.brand-public-info a:focus-visible,
-.brand-public-info button:hover,
-.brand-public-info button:focus-visible {
+.brand-contact-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--header-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.brand-contact-value {
+  display: block;
+  min-height: 19px;
+  white-space: nowrap;
+}
+
+.brand-contact-icon,
+.brand-contact-cue {
+  display: block;
+  flex: 0 0 auto;
+  opacity: 0.8;
+}
+
+.brand-contact-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.brand-contact-cue {
+  width: 12px;
+  height: 12px;
+}
+
+.brand-contact--action .brand-contact-value {
   text-decoration: underline;
+  text-decoration-color: rgba(244, 241, 234, 0.45);
+  text-underline-offset: 4px;
 }
 
-.brand-public-info a:focus-visible,
-.brand-public-info button:focus-visible {
-  outline: 1px solid currentColor;
-  outline-offset: 3px;
+.brand-contact--action:hover .brand-contact-value,
+.brand-contact--action:focus-visible .brand-contact-value {
+  text-decoration-color: currentColor;
 }
 
-.mini-program-dialog {
-  width: min(400px, calc(100% - 32px));
-  max-height: calc(100dvh - 32px);
-  padding: 24px;
+.brand-contact--action:hover .brand-contact-label {
+  color: var(--header-text);
+}
+
+.brand-contact--action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 5px;
+}
+
+.topbar.album-header {
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  align-items: start;
+  gap: 16px 32px;
+  padding-top: 24px;
+  padding-bottom: 16px;
+  border-bottom: 0;
+}
+
+.album-header .brand {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.album-header .brand > .brand-mark {
+  position: relative;
+  width: 44px;
+  height: 78px;
+}
+
+/* Remove the PNG's transparent padding without altering the official artwork. */
+.album-header .brand-logo {
+  position: absolute;
+  top: -33.012%;
+  left: 50%;
+  width: auto;
+  height: 155.181%;
+  transform: translateX(-49.174%);
+}
+
+.album-header .brand-copy {
+  min-width: 0;
+  max-width: 640px;
+}
+
+.album-header.topbar .brand h1 {
+  color: var(--header-heading);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.album-header .brand-overview {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  padding: 0 0 0 24px;
+  border: 0;
+  border-left: 1px solid rgba(244, 241, 234, 0.15);
+  background: transparent;
+}
+
+.album-header .brand-description {
+  max-width: 640px;
+  margin-top: 8px;
+  color: var(--header-text);
+  font-size: 12px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.brand-description-line {
+  display: contents;
+}
+
+.album-header .brand-public-info {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+}
+
+.album-header .brand-contact {
+  display: grid;
+  grid-template-rows: 16px 18px;
+  min-height: 44px;
+  align-content: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  font-size: 12px;
+}
+
+.album-header .brand-contact-value {
+  min-height: 0;
+  color: var(--header-text);
+}
+
+.album-header .brand-contact-label {
+  color: var(--header-secondary);
+  font-size: 11px;
+}
+
+.album-header .brand-contact-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.top-actions.album-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-width: 0;
+  width: 100%;
+  padding: 8px clamp(18px, 4vw, 56px);
+  border: 0;
+  background: var(--bg);
+  gap: 10px;
+}
+
+.album-navigation .site-nav {
+  flex: 1;
+  gap: 8px;
+}
+
+.album-navigation .site-nav .top-link {
+  min-height: 40px;
+  padding-inline: 16px;
+  border-radius: 6px;
+  font-size: 15px;
+  color: var(--header-secondary);
+}
+
+.album-navigation .site-nav .top-link:hover {
+  color: var(--header-heading);
+}
+
+.album-navigation .site-nav .top-link.is-active {
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.album-navigation .site-nav .top-link.is-active::after {
+  content: none;
+}
+
+.album-navigation .site-nav .top-link--utility {
+  font-size: 13px;
+}
+
+@media (min-width: 1280px) {
+  .album-header .brand-description {
+    font-size: 13px;
+  }
+
+  .brand-description-line {
+    display: block;
+  }
+}
+
+@media (max-width: 900px) {
+  .topbar.album-header {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .album-header .brand-overview {
+    grid-column: 1;
+    grid-row: auto;
+    padding: 10px 0 0;
+    border-left: 0;
+    border-top: 1px solid rgba(244, 241, 234, 0.15);
+  }
+
+  .top-actions.album-navigation {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 580px) {
+  .topbar.album-header {
+    padding: 16px 18px 12px;
+  }
+
+  .album-header .brand {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 12px;
+  }
+
+  .album-header .brand > .brand-mark {
+    width: 28px;
+    height: 44px;
+  }
+
+  .album-header .brand-copy {
+    display: contents;
+  }
+
+  .album-header.topbar .brand h1 {
+    grid-column: 2;
+    font-size: 22px;
+  }
+
+  .album-header .brand-description {
+    grid-column: 1 / -1;
+    margin-top: 0;
+    line-height: 1.8;
+  }
+
+  .top-actions.album-navigation {
+    gap: 6px;
+    padding-inline: 18px;
+  }
+
+  .album-navigation .site-nav {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .album-navigation .site-nav .top-link {
+    min-height: 44px;
+    padding-inline: 4px;
+    font-size: 12px;
+  }
+
+  .album-navigation .site-nav .top-link--utility {
+    font-size: 11px;
+  }
+
+  .official-album .release-nav a {
+    font-size: 12px;
+  }
+}
+
+.wechat-contact-popover {
+  position: fixed;
+  z-index: 30;
+  width: 248px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  padding: 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--paper);
@@ -342,86 +640,21 @@ p {
   overflow: auto;
 }
 
-.mini-program-dialog::backdrop {
-  background: rgba(13, 15, 16, 0.68);
+.wechat-contact-popover[hidden] {
+  display: none;
 }
 
-.mini-program-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.mini-program-header p {
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.mini-program-header h2 {
-  font-size: 20px;
-  font-weight: 500;
-}
-
-.mini-program-close {
-  flex: 0 0 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--ink);
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.mini-program-code {
+.wechat-contact-popover img {
   display: block;
   width: 100%;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--paper-2);
-  color: var(--ink);
-  font: inherit;
-  font-size: 13px;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-  resize: none;
+  height: auto;
 }
 
-.mini-program-copy {
-  width: 100%;
-  min-height: 44px;
-  margin-top: 16px;
-  border: 1px solid var(--ink);
-  border-radius: 4px;
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.mini-program-copy:disabled {
-  cursor: wait;
-  opacity: 0.6;
-}
-
-.mini-program-dialog :is(button, textarea):focus-visible {
-  outline: 2px solid var(--bg);
-  outline-offset: 3px;
-}
-
-.mini-program-status {
-  min-height: 20px;
-  margin-top: 12px;
-  color: var(--muted);
+.wechat-contact-popover p {
+  margin-top: 10px;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .stats {
@@ -547,6 +780,10 @@ main {
   margin: 28px auto 64px;
 }
 
+.official-album {
+  margin-top: 16px;
+}
+
 .brand-closing {
   padding: 0 18px 64px;
   background: var(--bg);
@@ -623,13 +860,12 @@ main {
 
 .release-nav {
   --release-ink: var(--header-text);
-  --release-muted: var(--header-muted);
+  --release-muted: var(--header-secondary);
   --release-line: rgba(244, 241, 234, 0.24);
   display: flex;
-  gap: 28px;
+  gap: 24px;
   min-width: 0;
-  margin-bottom: 18px;
-  border-bottom: 1px solid var(--release-line);
+  margin-bottom: 20px;
 }
 
 .release-nav a {
@@ -640,7 +876,7 @@ main {
   min-height: 44px;
   padding: 0 2px;
   color: var(--release-muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   text-decoration: none;
 }
@@ -683,9 +919,9 @@ main {
 .year-control {
   display: grid;
   min-width: 0;
-  gap: 8px;
-  color: var(--header-muted);
-  font-size: 13px;
+  gap: 6px;
+  color: var(--header-secondary);
+  font-size: 11px;
 }
 
 .search-wrap input,
@@ -1024,8 +1260,9 @@ main {
 .summary {
   min-height: 24px;
   margin-bottom: 18px;
-  color: var(--header-muted);
-  font-size: 14px;
+  color: var(--header-secondary);
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .results-bar {
@@ -1095,7 +1332,8 @@ body.view-list-page {
   background: #eff0ed;
 }
 
-.view-list-page .topbar {
+.view-list-page .topbar,
+.view-list-page .album-navigation {
   background: #262d2e;
 }
 
@@ -2555,6 +2793,10 @@ body.view-list-page {
   margin-top: 76px;
 }
 
+.story-catalog-section {
+  scroll-margin-top: 80px;
+}
+
 .story-feature-list,
 .story-catalog {
   display: grid;
@@ -3022,6 +3264,10 @@ body.view-list-page {
     padding: 12px 18px;
   }
 
+  .view-list-page .album-navigation {
+    padding-inline: 18px;
+  }
+
   .view-list-page .brand-mark {
     width: 48px;
     height: 48px;
@@ -3031,13 +3277,9 @@ body.view-list-page {
     font-size: 19px;
   }
 
-  .view-list-page .brand p {
+  .view-list-page .brand p:not(.brand-description) {
     margin-top: 2px;
     font-size: 11px;
-  }
-
-  .view-list-page .brand .brand-public-info {
-    font-size: 10px;
   }
 
   .view-list-page .official-album {

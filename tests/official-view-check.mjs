@@ -107,7 +107,12 @@ async function run() {
       await year.selectOption("all");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       assert.equal(await page.locator(".gallery .card-list").count(), 20);
-      if (width <= 390) assert.ok((await page.locator(".gallery img").first().boundingBox()).y < 600);
+      if (width <= 390) {
+        const firstImage = await page.locator(".gallery img").first().boundingBox();
+        const album = await page.locator("#albumMain").boundingBox();
+        assert.ok(firstImage.y - album.y < 420,
+          "keep directory controls compact independently of the new brand introduction above the album");
+      }
       await page.close();
     }
 

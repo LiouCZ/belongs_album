@@ -25,7 +25,7 @@ async function run() {
     const page = await browser.newPage();
     await page.goto(`file://${path.join(root, "player.html")}`);
     assert.equal(await page.locator(".brand-mark").evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
-    assert.equal((await page.locator(".brand-mark").boundingBox()).width, 64, "desktop brand mark should be a little larger");
+    assert.equal((await page.locator(".brand-mark").boundingBox()).width, 44, "desktop brand mark stays compact");
     assert.match(await page.locator(".brand-logo").evaluate((element) => getComputedStyle(element).filter), /drop-shadow/);
     await page.goto(`file://${path.join(root, "index.html")}?view=list`);
     assert.match(await page.locator(".brand-logo").evaluate((element) => getComputedStyle(element).filter), /invert\(1\)/);
@@ -35,10 +35,10 @@ async function run() {
         const mobile = await browser.newPage({ viewport: { width, height: 900 } });
         await mobile.goto(`file://${path.join(root, filename)}`);
         const mark = await mobile.locator(".brand-mark").boundingBox();
-        assert.equal(mark.width, filename.includes("view=list") ? 48 : 56);
+        assert.equal(mark.width, 28, "use the same small logo on every mobile page");
         assert.equal(await mobile.evaluate(() => {
           const mark = document.querySelector(".brand-mark").getBoundingClientRect();
-          const text = document.querySelector(".brand > div:last-child").getBoundingClientRect();
+          const text = document.querySelector(".brand h1").getBoundingClientRect();
           return document.documentElement.scrollWidth <= innerWidth && mark.right <= text.left && text.right <= innerWidth;
         }), true, "enlarged logo must not crowd the brand text");
         await mobile.close();

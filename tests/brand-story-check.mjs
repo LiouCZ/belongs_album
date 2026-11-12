@@ -105,7 +105,9 @@ async function run() {
     for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 900 }, { width: 1024, height: 900 }, { width: 768, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 720 }]) {
       const page = await browser.newPage({ viewport });
       await page.goto(`file://${path.join(root, "brand-story.html")}`);
-      assert.equal(await page.locator("h1").textContent(), "品牌故事");
+      assert.equal(await page.locator("h1").textContent(), "BELONGS B&K");
+      assert.equal(await page.locator(".brand-description").textContent(), "手作银饰 · 创作与影像");
+      assert.equal(await page.title(), "品牌故事 | Belongs");
       await assertImageFrames(page);
       await assertWhitespaceOrnaments(page, viewport);
       const philosophy = page.getByRole("region", { name: "创作理念" });
@@ -193,6 +195,9 @@ async function run() {
       await catalog.getByRole("button", { name: "全部", exact: true }).click();
       await catalog.locator("#storyNextPage").click();
       assert.match(await catalog.locator("#storyPageInfo").textContent(), /2 \/ 8/);
+      assert.equal(await catalog.evaluate((node) => node.getBoundingClientRect().top
+        >= document.querySelector(".album-navigation").getBoundingClientRect().bottom + 12), true,
+      "pagination keeps the catalog heading below the sticky navigation");
       await catalog.getByRole("button", { name: "2022" }).click();
       assert.equal(await catalog.locator(".story-entry").count(), 12);
       assert.match(await catalog.locator("#storyResultCount").textContent(), /49/);
