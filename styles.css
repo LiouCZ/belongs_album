@@ -493,6 +493,11 @@ button.brand-contact {
   height: 14px;
 }
 
+.album-header .brand-contact--email .brand-contact-value {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .top-actions.album-navigation {
   position: sticky;
   top: 0;
@@ -595,6 +600,10 @@ button.brand-contact {
     grid-column: 1 / -1;
     margin-top: 0;
     line-height: 1.8;
+  }
+
+  .album-header .brand-public-info {
+    column-gap: 16px;
   }
 
   .top-actions.album-navigation {

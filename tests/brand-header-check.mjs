@@ -13,6 +13,8 @@ const browser = await chromium.launch({
 });
 const description = "以解构东方美学为核，将金银淬炼为当代艺术语言，每件作品皆是文化符号与先锋美学的碰撞。熔铸光阴的温度，让创作成为永恒契约。";
 const socialUrl = "https://www.xiaohongshu.com/user/profile/651a074a00000000240173a2";
+const instagramUrl = "https://www.instagram.com/belongs_official/";
+const emailAddress = "belongs2019@126.com";
 
 try {
   for (const filename of ["index.html", "index.html?view=list", "player.html", "brand-story.html"]) {
@@ -25,6 +27,21 @@ try {
         "all three pages use the same compact album masthead");
       assert.equal(await page.locator(".brand h1").textContent(), "BELONGS B&K");
       assert.equal(await page.locator(".topbar .brand-public-info").count(), 1);
+      const instagram = page.locator(".brand-public-info").getByRole("link", { name: "Instagram：@belongs_official（新标签页）", exact: true });
+      assert.equal(await instagram.count(), 1, "each shared header should include the official Instagram profile");
+      assert.equal(await instagram.getAttribute("href"), instagramUrl);
+      assert.equal(await instagram.getAttribute("target"), "_blank");
+      assert.match(await instagram.getAttribute("rel"), /\bnoopener\b/);
+      assert.match(await instagram.getAttribute("rel"), /\bnoreferrer\b/);
+      assert.equal(await instagram.locator(".brand-contact-value").textContent(), "@belongs_official");
+      assert.equal(await instagram.locator(".brand-contact-cue").count(), 1);
+      const email = page.locator(".brand-public-info").getByRole("link", { name: `联系邮箱：${emailAddress}`, exact: true });
+      assert.equal(await email.count(), 1, "each shared header should include the contact email");
+      assert.equal(await email.getAttribute("href"), `mailto:${emailAddress}`);
+      assert.equal(await email.getAttribute("target"), null, "email should use the system mail handler, not a blank browser tab");
+      assert.equal(await email.locator(".brand-contact-value").textContent(), emailAddress);
+      assert.equal(await email.locator(".brand-contact-icon").getAttribute("src"), "assets/icons/mail.svg");
+      assert.equal(await email.locator(".brand-contact-value").evaluate((node) => getComputedStyle(node).textDecorationLine), "underline");
       if (filename.startsWith("index.html")) {
         await page.locator("#closeIntro").click();
         assert.equal(await page.title(), "BELONGS B&K | 官方画册");
@@ -60,13 +77,27 @@ try {
           && Boolean(header.querySelector(".brand-overview").compareDocumentPosition(navigationNode) & Node.DOCUMENT_POSITION_FOLLOWING)
           && links.every((link) => same(link.top, links[0].top) && link.height >= (innerWidth <= 580 ? 44 : 32))
           && contacts.every((contact) => same(contact.width, contacts[0].width))
-          && same(contacts[0].top, contacts[1].top) && same(contacts[2].top, contacts[3].top)
-          && contacts[2].top >= contacts[0].bottom && (innerWidth > 580 || navigation.bottom - box.top <= 350)
-          && (innerWidth < 1024 || navigation.bottom - box.top <= 210);
+          && [0, 2, 4].every((index) => same(contacts[index].top, contacts[index + 1].top)
+            && same(contacts[index].left, contacts[0].left) && same(contacts[index + 1].left, contacts[1].left))
+          && contacts[2].top >= contacts[0].bottom + 7 && contacts[4].top >= contacts[2].bottom + 7
+          && (innerWidth > 580 || navigation.bottom - box.top <= 402)
+          && (innerWidth < 1024 || navigation.bottom - box.top <= 262);
       }), true, "accounts accompany the brand above the full-width page navigation on phones and desktop");
+      assert.equal(await email.evaluate((node) => {
+        const label = node.querySelector(".brand-contact-label").getBoundingClientRect();
+        const value = node.querySelector(".brand-contact-value").getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return Math.abs(label.left - value.left) < 1 && value.top >= label.bottom + 3
+          && value.height <= 19 && value.right <= node.getBoundingClientRect().right + 1
+          && style.borderTopWidth === "0px" && style.borderBottomWidth === "0px"
+          && style.backgroundColor === "rgba(0, 0, 0, 0)";
+      }), true, "email follows the same label/value layout and stays complete on one line without a frame or button fill");
       const overview = page.locator(".brand-overview");
       const contacts = overview.locator(".brand-public-info");
-      assert.equal(await contacts.locator(".brand-contact").count(), 4);
+      assert.equal(await contacts.locator(".brand-contact").count(), 6);
+      assert.deepEqual(await contacts.locator(".brand-contact-label").allTextContents(),
+        ["小红书号", "Instagram", "微信公众号", "微信小程序", "官方微信", "联系邮箱"],
+        "group public profiles, WeChat content/services and direct contacts in three paired rows");
       const social = contacts.getByRole("link", { name: "小红书：BELONGS（新标签页）", exact: true });
       assert.equal(await social.getAttribute("href"), socialUrl);
       assert.equal(await social.getAttribute("target"), "_blank");
@@ -80,7 +111,7 @@ try {
       assert.equal(await contacts.getByRole("link", { name: "微信小程序：BELONGS B&K（新标签页）", exact: true }).count(), 1);
       assert.equal(await contacts.getByText("BELONGS OFFICIAL", { exact: true }).count(), 1);
       const icons = contacts.locator("img");
-      assert.equal(await icons.count(), 8);
+      assert.equal(await icons.count(), 11);
       for (const icon of await icons.all()) {
         await icon.evaluate((node) => node.decode());
         assert.equal(await icon.getAttribute("alt"), "");
@@ -103,6 +134,12 @@ try {
         "rgba(0, 0, 0, 0)", "the account rail inherits the existing header palette");
       await social.focus();
       assert.equal(await social.evaluate((node) => getComputedStyle(node).outlineStyle !== "none"), true);
+      await email.focus();
+      assert.equal(await email.evaluate((node) => document.activeElement === node
+        && getComputedStyle(node).outlineStyle !== "none"), true, "email must have visible keyboard focus");
+      await instagram.focus();
+      assert.equal(await instagram.evaluate((node) => document.activeElement === node
+        && getComputedStyle(node).outlineStyle !== "none"), true, "Instagram must have visible keyboard focus");
       if (process.env.BRAND_HEADER_SCREENSHOT_DIR && [320, 390, 1440].includes(width)) {
         mkdirSync(process.env.BRAND_HEADER_SCREENSHOT_DIR, { recursive: true });
         await page.mouse.click(2, 2);
@@ -110,11 +147,13 @@ try {
           `brand-header-${filename.replace(/[.?=]/g, "-")}-${width}.png`) });
       }
       if (width === 1440 && filename === "index.html") {
-        await page.context().route(socialUrl, (route) => route.fulfill({ contentType: "text/html", body: "Official profile" }));
-        const [profile] = await Promise.all([page.waitForEvent("popup"), social.click()]);
-        await profile.waitForURL(socialUrl);
-        assert.equal(await profile.evaluate(() => window.opener === null), true);
-        await profile.close();
+        for (const [link, url] of [[social, socialUrl], [instagram, instagramUrl]]) {
+          await page.context().route(url, (route) => route.fulfill({ contentType: "text/html", body: "Official profile" }));
+          const [profile] = await Promise.all([page.waitForEvent("popup"), link.click()]);
+          await profile.waitForURL(url);
+          assert.equal(await profile.evaluate(() => window.opener === null), true);
+          await profile.close();
+        }
         await page.evaluate(() => window.scrollBy(0, 600));
         assert.ok((await overview.boundingBox()).y + (await overview.boundingBox()).height <= 0,
           "the brand introduction and social entries should scroll out of the way");

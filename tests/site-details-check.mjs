@@ -102,7 +102,11 @@ async function run() {
       await profile.waitForURL(socialUrl);
       assert.equal(await profile.evaluate(() => window.opener === null), true);
       await profile.close();
-      assert.equal(await brandInfo.getByRole("link").count(), 2, "Xiaohongshu and the mini program use links; both WeChat accounts use QR buttons");
+      assert.equal(await brandInfo.getByRole("link").count(), 4, "Xiaohongshu, Instagram, the mini program and email use links; both WeChat accounts use QR buttons");
+      assert.equal(await brandInfo.getByRole("link", { name: "联系邮箱：belongs2019@126.com", exact: true }).getAttribute("href"),
+        "mailto:belongs2019@126.com");
+      assert.equal(await brandInfo.getByRole("link", { name: "Instagram：@belongs_official（新标签页）", exact: true }).getAttribute("href"),
+        "https://www.instagram.com/belongs_official/");
       const trigger = page.locator("#siteEggTrigger");
       assert.equal(await trigger.count(), 1);
       assert.equal(await page.locator(".top-actions > #siteEggTrigger").count(), 1);
