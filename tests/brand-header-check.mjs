@@ -54,6 +54,11 @@ try {
         assert.equal(await page.locator("body > .brand-overview, main .brand-overview").count(), 0,
           "do not leave a separate introduction in the content area");
       }
+      assert.equal(await page.locator(".brand").evaluate((brand) => {
+        const mark = brand.querySelector(".brand-mark").getBoundingClientRect();
+        const text = brand.querySelector(innerWidth <= 580 ? "h1" : ".brand-copy").getBoundingClientRect();
+        return Math.abs((mark.top + mark.bottom) / 2 - (text.top + text.bottom) / 2) < 1;
+      }), true, "center the logo beside the complete desktop text block, or the title on mobile");
       assert.equal(await page.locator(".topbar").evaluate((header) => {
         const box = header.getBoundingClientRect();
         const brand = header.querySelector(".brand").getBoundingClientRect();

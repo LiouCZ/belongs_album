@@ -407,7 +407,7 @@ button.brand-contact {
   display: grid;
   width: 100%;
   grid-template-columns: 44px minmax(0, 1fr);
-  align-items: start;
+  align-items: center;
   gap: 16px;
 }
 
