@@ -59,7 +59,7 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
 
   assert.equal(await page.locator("h1").textContent(), "BELONGS B&K");
   assert.equal(await page.locator(".brand-description").textContent(), "玩家分享合集");
-  assert.equal(await page.title(), "Belongs 玩家分享画册");
+  assert.equal(await page.title(), "BELONGS B&K | 玩家分享");
   await expectVisible(page.getByRole("link", { name: "官方画册" }), "official album nav link should be visible");
   await expectVisible(page.getByRole("link", { name: "玩家分享" }), "player album nav link should be visible");
   await expectVisible(page.getByRole("searchbox"), "search input should remain available");

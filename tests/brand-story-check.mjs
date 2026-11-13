@@ -107,7 +107,7 @@ async function run() {
       await page.goto(`file://${path.join(root, "brand-story.html")}`);
       assert.equal(await page.locator("h1").textContent(), "BELONGS B&K");
       assert.equal(await page.locator(".brand-description").textContent(), "手作银饰 · 创作与影像");
-      assert.equal(await page.title(), "品牌故事 | Belongs");
+      assert.equal(await page.title(), "BELONGS B&K | 品牌故事");
       await assertImageFrames(page);
       await assertWhitespaceOrnaments(page, viewport);
       const philosophy = page.getByRole("region", { name: "创作理念" });
