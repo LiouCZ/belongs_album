@@ -839,6 +839,21 @@ main {
   content: "";
 }
 
+.brand-copyright {
+  display: grid;
+  gap: 6px;
+  max-width: 480px;
+  margin: 28px auto 0;
+  color: var(--header-muted);
+  font-size: 12px;
+  line-height: 1.8;
+  text-wrap: pretty;
+}
+
+.brand-copyright p {
+  margin: 0;
+}
+
 .view-list-page .brand-closing {
   padding-top: 48px;
 }

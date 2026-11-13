@@ -22,6 +22,22 @@ async function checkFooter(browser, filename, width) {
   assert.equal(await footer.count(), 1, "each album page should have one closing brand signature");
   assert.equal(await footer.locator(".brand-closing-quote").textContent(), "前路漫漫亦灿灿，作品既是艺术亦是态度。");
   assert.equal(await footer.locator(".brand-closing-signature").textContent(), "BELONGS B&K® Est.2019");
+  const copyright = footer.getByRole("group", { name: "版权说明" });
+  assert.equal(await copyright.count(), 1, "each shared footer includes a copyright notice");
+  assert.deepEqual(await copyright.locator("p").allTextContents(), [
+    "Belongs B&K® 为注册商标，版权所有。",
+    "Belongs B&K 字体及相关图像均已注册。",
+  ]);
+  assert.equal(await copyright.evaluate((element) => {
+    const signature = element.previousElementSibling.getBoundingClientRect();
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    const paragraphs = [...element.querySelectorAll("p")];
+    return box.top >= signature.bottom + 20 && parseFloat(style.fontSize) >= 12
+      && parseFloat(style.fontSize) < parseFloat(getComputedStyle(element.previousElementSibling).fontSize)
+      && style.textAlign === "center" && style.color === getComputedStyle(element.previousElementSibling).color
+      && paragraphs[1].getBoundingClientRect().top >= paragraphs[0].getBoundingClientRect().bottom + 4;
+  }), true, "copyright is quiet secondary text below the signature, with spacing between both notices");
   const mainBox = await page.locator("main").boundingBox();
   const footerBox = await footer.boundingBox();
   assert.ok(footerBox.y >= mainBox.y + mainBox.height + 48, "the signature should follow the content with breathing room");
