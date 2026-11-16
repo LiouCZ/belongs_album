@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +22,57 @@ async function openPage(browser, filename, viewport = { width: 1280, height: 900
   return page;
 }
 
+async function checkStampAppearance(page) {
+  const dialog = page.locator("#siteEggDialog");
+  assert.equal(await dialog.evaluate((node) => {
+    const style = getComputedStyle(node);
+    const header = node.querySelector(".site-egg-header");
+    const close = header.querySelector("button");
+    const closeStyle = getComputedStyle(close);
+    const closeBox = close.getBoundingClientRect();
+    const quote = node.querySelector(".site-egg-quote");
+    const quoteStyle = getComputedStyle(quote);
+    const citationStyle = getComputedStyle(quote.querySelector("cite"));
+    const discovery = node.querySelector(".discovery-strip");
+    return style.borderRadius === "8px" && style.borderTopColor === "rgba(244, 241, 234, 0.24)"
+      && style.boxShadow !== "none" && style.backgroundColor === "rgb(95, 105, 107)"
+      && closeStyle.borderTopWidth === "0px" && closeBox.width >= 44 && closeBox.height >= 44
+      && quoteStyle.backgroundColor === "rgb(244, 241, 234)" && parseFloat(quoteStyle.paddingTop) >= 24
+      && parseFloat(citationStyle.fontSize) < parseFloat(getComputedStyle(quote.querySelector("p")).fontSize)
+      && (!discovery || getComputedStyle(discovery).borderBottomWidth === "0px");
+  }), true, "the stamp uses a soft outline, a borderless usable close button, an airy quotation and no trailing divider");
+  assert.equal(await dialog.locator(".discovery-pick, .discovery-trace-item").evaluateAll((items) =>
+    items.every((item) => getComputedStyle(item).borderTopWidth === "0px"
+      && getComputedStyle(item).borderRadius === "6px")), true,
+  "work entries are lightweight image-and-text links, not nested outlined boxes");
+  assert.equal(await dialog.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    return box.left >= 12 && box.right <= innerWidth - 12 && box.top >= 8 && box.bottom <= innerHeight - 8
+      && node.scrollWidth <= node.clientWidth && document.documentElement.scrollWidth <= innerWidth
+      && [...node.querySelectorAll(".site-egg-header, .site-egg-quote, .discovery-label, strong, small")]
+        .every((item) => item.scrollWidth <= item.clientWidth + 1);
+  }), true, "the stamp and all text must fit the viewport without horizontal clipping");
+  const close = dialog.getByRole("button", { name: "关闭印记" });
+  await page.keyboard.press("Tab");
+  await close.focus();
+  assert.equal(await close.evaluate((node) => getComputedStyle(node).outlineStyle !== "none"), true,
+    "the borderless close button retains a visible keyboard focus ring");
+  const works = dialog.locator(".discovery-pick, .discovery-trace-item");
+  for (const work of await works.all()) {
+    await work.focus();
+    assert.equal(await work.evaluate((node) => getComputedStyle(node).outlineStyle !== "none"), true,
+      "lightweight work entries retain visible keyboard focus");
+  }
+  const trace = dialog.locator(".discovery-trace");
+  if (await trace.count()) await trace.evaluate((node) => { node.scrollLeft = 0; });
+  await dialog.locator(".site-egg-header span").click();
+  if (process.env.STAMP_SCREENSHOT_DIR) {
+    mkdirSync(process.env.STAMP_SCREENSHOT_DIR, { recursive: true });
+    await page.screenshot({ path: path.join(process.env.STAMP_SCREENSHOT_DIR,
+      `${path.basename(new URL(page.url()).pathname)}-${page.viewportSize().width}.png`) });
+  }
+}
+
 async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
   try {
@@ -30,6 +82,7 @@ async function run() {
     assert.equal(await eggTrigger.isVisible(), true);
     await eggTrigger.click();
     assert.equal(await home.locator("#siteEggDialog").isVisible(), true);
+    await checkStampAppearance(home);
     const daily = home.locator("#dailyPick");
     assert.ok((await daily.locator("strong").textContent()).trim());
     const firstDailyId = await daily.getAttribute("data-discovery-id");
@@ -114,6 +167,7 @@ async function run() {
       await trigger.click();
       const egg = page.locator("#siteEggDialog");
       assert.equal(await egg.isVisible(), true);
+      await checkStampAppearance(page);
       assert.match(await egg.textContent(), /官方图文《.+》 · 20\d{2}/);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       await page.close();
@@ -130,6 +184,7 @@ async function run() {
 
     const narrow = await openPage(browser, "index.html", { width: 320, height: 720 });
     await narrow.locator("#siteEggTrigger").click();
+    await checkStampAppearance(narrow);
     assert.equal(await narrow.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     const traceLayout = await narrow.locator("#timeTrace").evaluate((trace) => ({
       count: trace.children.length,
@@ -150,6 +205,25 @@ async function run() {
       }
     }
     await narrow.close();
+
+    for (const filename of ["index.html", "index.html?view=list", "player.html", "brand-story.html"]) {
+      for (const [width, height] of [[320, 568], [390, 600], [680, 720], [681, 720], [1440, 900]]) {
+        const page = await openPage(browser, filename, { width, height });
+        await page.clock.setFixedTime(new Date("2026-11-16T12:00:00"));
+        await page.locator("#siteEggTrigger").click();
+        await checkStampAppearance(page);
+        if (filename.startsWith("index.html")) {
+          assert.equal(await page.locator(".discovery-trace-item").count(), 3,
+            "check the fallback layout with a full row of three historical works");
+        }
+        await page.keyboard.press("Escape");
+        assert.equal(await page.locator("#siteEggDialog").isHidden(), true);
+        assert.equal(await page.locator("#siteEggTrigger").evaluate((node) => document.activeElement === node), true,
+          "closing the stamp returns keyboard focus to its trigger");
+        console.log(`PASS stamp outline, typography, focus, overflow and dismissal: ${filename} ${width}x${height}`);
+        await page.close();
+      }
+    }
   } finally {
     await browser.close();
   }

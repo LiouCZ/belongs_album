@@ -185,7 +185,12 @@
     </dialog>
 
     <dialog class="detail" id="detailDialog">
-      <button class="close-button" id="closeDialog" aria-label="关闭">×</button>
+      <header class="detail-toolbar">
+        <span class="detail-toolbar-label">作品详情</span>
+        <button type="button" class="close-button" id="closeDialog" aria-label="关闭" title="关闭">
+          <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+        </button>
+      </header>
       <div class="detail-grid">
         <figure>
           <img id="detailImage" alt="" />
@@ -211,7 +216,9 @@
           <p class="article-dialog-meta" id="articleDialogMeta"></p>
           <h2 id="articleDialogTitle">作品与时间</h2>
         </div>
-        <button type="button" class="article-dialog-close" id="closeArticle" aria-label="关闭整篇图文" title="关闭整篇图文">×</button>
+        <button type="button" class="article-dialog-close" id="closeArticle" aria-label="关闭整篇图文" title="关闭整篇图文">
+          <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+        </button>
       </header>
       <div class="article-dialog-body" id="articleBody"></div>
     </dialog>
