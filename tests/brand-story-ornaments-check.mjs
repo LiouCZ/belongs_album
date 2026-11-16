@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(path.join(process.env.PLAYWRIGHT_MODULE_DIR || root, "package.json"));
 const { chromium } = require("playwright");
-const assets = ["grape-leaf-cutout.png", "snake-bone-cutout.png"];
+const assets = ["snake-bone-cutout.png"];
 
 for (const name of assets) {
   assert.ok(existsSync(path.join(root, "assets/brand-story", name)), `missing photo-derived ornament: ${name}`);
@@ -65,10 +65,6 @@ try {
     assert.ok(pixels.ink > 1000, `${name} must contain visible extracted detail`);
     assert.ok(pixels.transparent > pixels.width * pixels.height * 0.25, `${name} needs genuine transparent whitespace`);
     assert.ok(pixels.colors > 300, `${name} should retain the photograph's metallic texture, not a flat substitute`);
-    if (name === "grape-leaf-cutout.png") {
-      assert.ok(pixels.green > pixels.opaque * 0.9, "grape leaves should have a natural green color, not the original gold tint");
-      assert.ok(pixels.contrast > 90, "leaf highlights and recessed veins should remain distinct");
-    }
     if (name === "snake-bone-cutout.png") {
       assert.ok(pixels.minX >= 10 && pixels.minY >= 10 && pixels.maxX < pixels.width - 10 && pixels.maxY < pixels.height - 10, "all bone hooks need transparent padding; never end a rib at the crop boundary");
     }
@@ -89,8 +85,8 @@ try {
       const style = getComputedStyle(element);
       return { opacity: Number(style.opacity), filter: style.filter };
     });
-    assert.ok(vineStyle.opacity >= 0.75, "green leaf texture must not be washed out by the old opacity");
-    assert.equal(vineStyle.filter, "none", "do not desaturate the requested green leaf color");
+    assert.ok(vineStyle.opacity >= 0.75, "the restrained green outline should remain visible");
+    assert.equal(vineStyle.filter, "none", "retain the gentle green leaf color");
     for (const box of boxes) {
       assert.equal(box.pointerEvents, "none");
       assert.ok(box.x >= 0 && box.right <= width, "organic ornaments must stay inside the screen");
@@ -105,8 +101,50 @@ try {
   await rendered.addInitScript(() => {
     window.boneDraws = [];
     window.boneRemovedPixels = 0;
+    window.vineRemovedPixels = 0;
+    window.vineRender = { leaves: 0, photos: 0, strokes: 0, leafProfiles: [] };
+    const clearRect = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+      if (this.canvas.closest(".story-ornament--vine")) window.vineRender = { leaves: 0, photos: 0, strokes: 0, leafProfiles: [] };
+      return clearRect.apply(this, args);
+    };
+    const fill = CanvasRenderingContext2D.prototype.fill;
+    CanvasRenderingContext2D.prototype.fill = function (...args) {
+      if (this.canvas.closest(".story-ornament--vine")) {
+        window.vineRender.leaves += 1;
+        const matrix = this.getTransform();
+        let left = Infinity;
+        let right = -Infinity;
+        let top = Infinity;
+        let bottom = -Infinity;
+        const inside = [];
+        for (let y = -100; y <= 30; y += 1.5) {
+          for (let x = -100; x <= 100; x += 1.5) {
+            if (!this.isPointInPath(matrix.a * x + matrix.c * y + matrix.e, matrix.b * x + matrix.d * y + matrix.f)) continue;
+            inside.push({ x, y });
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+          }
+        }
+        const tips = inside.filter((point) => point.y < top + (bottom - top) * 0.1);
+        window.vineRender.leafProfiles.push({
+          ratio: (right - left) / (bottom - top),
+          fullness: inside.length * 1.5 ** 2 / ((right - left) * (bottom - top)),
+          tipOffset: Math.abs(tips.reduce((sum, point) => sum + point.x, 0) / tips.length) / (right - left),
+        });
+      }
+      return fill.apply(this, args);
+    };
+    const stroke = CanvasRenderingContext2D.prototype.stroke;
+    CanvasRenderingContext2D.prototype.stroke = function (...args) {
+      if (this.canvas.closest(".story-ornament--vine")) window.vineRender.strokes += 1;
+      return stroke.apply(this, args);
+    };
     const drawImage = CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage = function (image, ...args) {
+      if (this.canvas.closest(".story-ornament--vine")) window.vineRender.photos += 1;
       if (this.canvas.closest(".story-ornament--bone")) {
         const [x, y, width, height] = args.length === 8 ? args.slice(4) : args;
         const matrix = this.getTransform();
@@ -120,7 +158,8 @@ try {
     };
     const fillRect = CanvasRenderingContext2D.prototype.fillRect;
     CanvasRenderingContext2D.prototype.fillRect = function (x, y, width, height) {
-      if (this.canvas.closest(".story-ornament--bone") && this.globalCompositeOperation === "destination-out") {
+      const ornament = this.canvas.closest(".story-ornament");
+      if (ornament && this.globalCompositeOperation === "destination-out") {
         const matrix = this.getTransform();
         const left = Math.max(0, Math.floor(x * matrix.a));
         const top = Math.max(0, Math.floor(y * matrix.d));
@@ -128,7 +167,11 @@ try {
         const bottom = Math.min(this.canvas.height, Math.ceil((y + height) * matrix.d));
         if (right > left && bottom > top) {
           const pixels = this.getImageData(left, top, right - left, bottom - top).data;
-          for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 10) window.boneRemovedPixels += 1;
+          for (let i = 3; i < pixels.length; i += 4) {
+            if (pixels[i] <= 10) continue;
+            if (ornament.matches(".story-ornament--bone")) window.boneRemovedPixels += 1;
+            else window.vineRemovedPixels += 1;
+          }
         }
       }
       return fillRect.call(this, x, y, width, height);
@@ -143,7 +186,7 @@ try {
   const errors = [];
   rendered.on("pageerror", (error) => errors.push(error.message));
   await rendered.goto("https://belongs.test/brand-story.html");
-  for (const width of [1440, 1024, 390, 320, 1280]) {
+  for (const width of [1440, 1024, 1023, 844, 768, 568, 430, 390, 360, 320, 1280]) {
     await rendered.setViewportSize({ width, height: 900 });
     await rendered.waitForFunction(() => [...document.querySelectorAll(".story-ornament")].every((element) => element.dataset.ornamentState === "ready" && Math.abs(element.getBoundingClientRect().width - document.documentElement.clientWidth) < 1));
     await rendered.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -159,10 +202,12 @@ try {
         let left = 0;
         let right = 0;
         let turned = 0;
+        let clipped = 0;
         for (let y = 0; y < canvas.height; y += 3) {
           for (let x = 0; x < canvas.width; x += 3) {
             if (pixels[(y * canvas.width + x) * 4 + 3] < 10) continue;
             ink += 1;
+            if (x < 3 || y < 3 || x >= canvas.width - 3 || y >= canvas.height - 3) clipped += 1;
             const px = bounds.x + x / scale;
             const py = bounds.y + y / scale;
             if (protectedBoxes.some((box) => px >= box.left - 8 && px <= box.right + 8 && py >= box.top - 8 && py <= box.bottom + 8)) obscured += 1;
@@ -172,16 +217,24 @@ try {
             if (py > portrait.bottom + 12 && px < portrait.right) turned += 1;
           }
         }
-        return { ink, obscured, left, right, turned };
+        return { ink, obscured, left, right, turned, clipped };
       });
     });
+    const vineRender = await rendered.evaluate(() => window.vineRender);
+    assert.equal(vineRender.photos, 0, "simplified leaves must not reuse the dense photographic relief");
+    assert.equal(vineRender.leaves, width >= 1024 ? 4 : 3, "keep a sparse responsive rhythm of leaves");
+    assert.ok(vineRender.leafProfiles.every((leaf) => leaf.ratio >= 1.05 && leaf.ratio <= 1.45), "the grape blade should remain broad and balanced rather than stretch into a decorative fan");
+    assert.ok(vineRender.leafProfiles.every((leaf) => leaf.fullness >= 0.6), "shallow lobes must retain a continuous, full grape-leaf blade");
+    assert.ok(vineRender.leafProfiles.every((leaf) => leaf.tipOffset <= 0.12), "the main lobe should point outward above the petiole rather than curl sideways");
+    assert.ok(vineRender.strokes >= vineRender.leaves * 3 + 3, "retain independent curling tendrils alongside leaves and petioles");
     for (const scene of scenes) {
       assert.ok(scene.ink > 100, "ornament canvases must not be blank");
       assert.equal(scene.obscured, 0, "not a single sampled ornament pixel may cover the image or text's clear area");
+      assert.equal(scene.clipped, 0, `spread leaves, tendrils and bones must fit completely inside the decorative canvas at ${width}px`);
       assert.ok(scene.turned > 30, "the path should continue around the image corner into the lower whitespace");
     }
     if (width >= 1024) {
-      assert.ok(scenes[0].left > 100 && scenes[1].right > 100, "both margins should contain visible photographic ornament");
+      assert.ok(scenes[0].left > 100 && scenes[1].right > 100, "both margins should retain visible ornaments");
     }
   }
   const boneDetails = await rendered.evaluate(() => ({ draws: window.boneDraws, removed: window.boneRemovedPixels }));
@@ -189,6 +242,7 @@ try {
   assert.ok(boneDetails.draws.every((draw) => draw.whole), "place complete photographic bone units, without skipping source columns");
   assert.ok(boneDetails.draws.every((draw) => !draw.clipped), "a complete bone unit must fit the ornament canvas, including its outer hooks");
   assert.equal(boneDetails.removed, 0, "the text/image safety mask must not erase any bone details");
+  assert.equal(await rendered.evaluate(() => window.vineRemovedPixels), 0, "image clear space must not truncate the grape-leaf outline or veins");
   assert.deepEqual(errors, []);
   await rendered.close();
   const failedAsset = await browser.newPage();
@@ -202,7 +256,7 @@ try {
   assert.equal(await staticPage.locator(".story-ornament canvas").count(), 0);
   assert.equal(await staticPage.locator(".brand-illustration img").isVisible(), true);
   await staticPage.close();
-  console.log("PASS photo-derived transparent ornaments, winding trails and responsive whitespace");
+  console.log("PASS complete photographic bones, simplified leaves, retained tendrils and responsive whitespace");
 } finally {
   await browser.close();
 }
