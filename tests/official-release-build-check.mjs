@@ -48,6 +48,18 @@ try {
   assert.ok(historical.items.every((item) => item.releaseType === "invited"), "historical entries can be explicitly reassigned without losing images");
   payload = JSON.parse(await readFile(path.join(site, "data/curated-official.json"), "utf8"));
   assert.equal(payload.items[0].releaseType ?? "regular", "regular", "unmarked old records remain compatible");
+  for (const type of ["custom", "display", "personal"]) {
+    entries[1].releaseType = type;
+    legacy[0].releaseType = type;
+    await save(`entries/${slug}.json`, entries);
+    await save("entries/legacy-2021.json", legacy);
+    await buildOfficialAlbum({ source, site });
+    const history = JSON.parse(await readFile(path.join(site, "data/items.json"), "utf8"));
+    assert.ok(history.items.every((item) => item.releaseType === type), "historical records must preserve the new section assignment");
+    const curated = JSON.parse(await readFile(path.join(site, "data/curated-official.json"), "utf8"));
+    assert.equal(curated.articles[0].works[1].releaseType, type, "article works must preserve the new section assignment");
+    assert.equal(curated.items[1].releaseType, type, "new section assignments must reach browser image data");
+  }
   const previous = await readFile(path.join(site, "data/items.json"), "utf8");
   entries[1].releaseType = "typo";
   await save(`entries/${slug}.json`, entries);

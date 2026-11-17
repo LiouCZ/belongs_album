@@ -17,6 +17,27 @@ const state = {
   view: "grid",
 };
 
+const officialReleaseLabels = {
+  regular: "常规发售",
+  invited: "邀约作品",
+  custom: "定制作品",
+  display: "展示作品",
+  personal: "自用作品",
+};
+
+const coverStampLabels = { gold: "全金作品", antique: "古董改造" };
+
+function coverStamps(item) {
+  return Object.keys(coverStampLabels).filter((stamp) => Array.isArray(item.coverStamps) && item.coverStamps.includes(stamp));
+}
+
+function coverStampsHtml(item) {
+  const stamps = coverStamps(item);
+  if (!stamps.length) return "";
+  const position = ["top-left", "bottom-right", "bottom-left"].includes(item.coverStampPosition) ? item.coverStampPosition : "top-right";
+  return `<span class="cover-stamps" data-position="${position}">${stamps.map((stamp) => `<span class="cover-stamp cover-stamp--${stamp}" role="img" aria-label="${coverStampLabels[stamp]}"></span>`).join("")}</span>`;
+}
+
 const els = {
   totalCount: document.querySelector("#totalCount"),
   visibleCount: document.querySelector("#visibleCount"),
@@ -75,7 +96,9 @@ function groupText(value) {
 }
 
 function groupKey(item) {
-  return [item.collection, item.articleId, item.date, item.title, item.caption, item.releaseType || "regular"].map(groupText).join("|");
+  const stamps = coverStamps(item);
+  return [item.collection, item.articleId, item.date, item.title, item.caption, item.releaseType || "regular",
+    stamps.join(","), stamps.length ? item.coverStampPosition || "top-right" : ""].map(groupText).join("|");
 }
 
 function createGroups(items) {
@@ -94,6 +117,8 @@ function createGroups(items) {
         title: item.title,
         caption: item.caption,
         releaseType: item.releaseType || "regular",
+        coverStamps: coverStamps(item),
+        coverStampPosition: item.coverStampPosition,
         articleId: item.articleId || null,
         sourceIndex: item.sourceIndex,
         index: item.index,
@@ -190,8 +215,12 @@ function releaseGroups() {
   return els.releaseNav ? state.groups.filter((group) => group.releaseType === state.releaseType) : state.groups;
 }
 
+function normalizeReleaseType(type) {
+  return Object.hasOwn(officialReleaseLabels, type) ? type : "regular";
+}
+
 function releaseLabel(type = state.releaseType) {
-  return type === "invited" ? "邀约作品" : "常规发售";
+  return officialReleaseLabels[normalizeReleaseType(type)];
 }
 
 function renderReleaseNav() {
@@ -200,7 +229,7 @@ function renderReleaseNav() {
     if (link.dataset.releaseType === state.releaseType) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
     const url = new URL(window.location.href);
-    if (link.dataset.releaseType === "invited") url.searchParams.set("release", "invited");
+    if (link.dataset.releaseType !== "regular") url.searchParams.set("release", link.dataset.releaseType);
     else url.searchParams.delete("release");
     link.href = url.href;
   }
@@ -223,7 +252,7 @@ function renderScopeFilters() {
 
 function setReleaseType(type, updateUrl = false) {
   if (!els.releaseNav) return;
-  const nextType = type === "invited" ? "invited" : "regular";
+  const nextType = normalizeReleaseType(type);
   if (nextType !== state.releaseType) {
     state.releaseType = nextType;
     state.page = 1;
@@ -231,7 +260,7 @@ function setReleaseType(type, updateUrl = false) {
     renderDiscovery();
     if (updateUrl) {
       const url = new URL(window.location.href);
-      if (nextType === "invited") url.searchParams.set("release", "invited");
+      if (nextType !== "regular") url.searchParams.set("release", nextType);
       else url.searchParams.delete("release");
       window.history.pushState(null, "", url);
     }
@@ -285,8 +314,9 @@ function renderCards(items) {
   if (els.playerAlbum) {
     els.gallery.innerHTML = items.map((item) => `
       <article class="card player-card" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
-        <div class="thumb">
+        <div class="thumb${coverStamps(item).length ? " has-cover-stamps" : ""}">
           <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
+          ${coverStampsHtml(item)}
           ${item.imageCount > 1 ? `<span class="image-count">${item.imageCount} 张</span>` : ""}
         </div>
         <div class="card-body">
@@ -302,7 +332,7 @@ function renderCards(items) {
       const copy = workCopy(item);
       return `
       <article class="card card-list ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
-        <div class="thumb"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" /></div>
+        <div class="thumb${coverStamps(item).length ? " has-cover-stamps" : ""}"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />${coverStampsHtml(item)}</div>
         <div class="card-body">
           <p class="meta">${escapeHtml(groupDate(item))}</p>
           <div class="list-details">
@@ -323,8 +353,9 @@ function renderCards(items) {
         const copy = workCopy(item);
         return `
         <article class="card ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
-          <div class="thumb">
+          <div class="thumb${coverStamps(item).length ? " has-cover-stamps" : ""}">
             <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
+            ${coverStampsHtml(item)}
             ${item.imageCount > 1 ? `<span class="image-count">${item.imageCount} 张</span>` : ""}
           </div>
           <div class="card-body">
@@ -848,7 +879,7 @@ async function init() {
     state.query = query;
     els.searchInput.value = query;
   }
-  if (els.releaseNav && new URLSearchParams(window.location.search).get("release") === "invited") state.releaseType = "invited";
+  if (els.releaseNav) state.releaseType = normalizeReleaseType(new URLSearchParams(window.location.search).get("release"));
   if (els.viewSwitch) setView(new URLSearchParams(window.location.search).get("view"));
   renderScopeFilters();
   renderDiscovery();

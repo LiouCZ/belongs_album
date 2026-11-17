@@ -1712,7 +1712,75 @@ body.view-list-page {
 .thumb img {
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   object-fit: contain;
+}
+
+.cover-stamps {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.cover-stamps[data-position$="left"] {
+  right: auto;
+  left: 10px;
+}
+
+.cover-stamps[data-position^="bottom"] {
+  top: auto;
+  bottom: 10px;
+}
+
+.cover-stamp {
+  display: block;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  background: center / contain no-repeat;
+  filter: drop-shadow(0 0 1px rgba(17, 19, 21, 0.7));
+  pointer-events: none;
+}
+
+.cover-stamp--gold {
+  background-image: url("assets/cover-stamps/gold-work-stamp.png");
+}
+
+.cover-stamp--antique {
+  background-image: url("assets/cover-stamps/antique-rework-stamp.png");
+}
+
+.has-cover-stamps .image-count {
+  top: auto;
+  bottom: 12px;
+}
+
+.has-cover-stamps:has([data-position="bottom-right"]) .image-count {
+  top: 12px;
+  bottom: auto;
+}
+
+.is-list-view .cover-stamps {
+  flex-direction: column;
+  gap: 4px;
+  top: 4px;
+  right: 4px;
+}
+
+.is-list-view .cover-stamps[data-position$="left"] { left: 4px; right: auto; }
+.is-list-view .cover-stamps[data-position^="bottom"] { top: auto; bottom: 4px; }
+.is-list-view .cover-stamp { width: 40px; height: 40px; }
+
+@media (max-width: 600px) {
+  .cover-stamps { top: 8px; right: 8px; gap: 4px; }
+  .cover-stamps[data-position$="left"] { left: 8px; }
+  .cover-stamps[data-position^="bottom"] { bottom: 8px; }
+  .cover-stamp { width: 48px; height: 48px; }
+  .is-list-view .cover-stamp { width: 36px; height: 36px; }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -3621,6 +3689,9 @@ body.view-list-page {
   }
 
   .official-album .release-nav {
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 3px;
     margin-bottom: 12px;
   }
 
@@ -3938,5 +4009,11 @@ body.view-list-page {
   .story-visit {
     padding-top: 8px;
     font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .official-album .release-nav {
+    gap: 6px;
   }
 }

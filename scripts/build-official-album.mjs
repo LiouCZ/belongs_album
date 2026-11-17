@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { buildCuratedOfficial } from "./build-curated-official.mjs";
+import { coverStampMetadata } from "./cover-stamps.mjs";
 
 const defaultSite = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -71,7 +72,7 @@ export async function buildOfficialAlbum({ site = defaultSite, source = path.res
       }
       entryIds.add(entry.id);
       entryCount += 1;
-      if (entry.releaseType !== undefined && !["regular", "invited"].includes(entry.releaseType)) {
+      if (entry.releaseType !== undefined && !["regular", "invited", "custom", "display", "personal"].includes(entry.releaseType)) {
         throw new Error(`Invalid release type: ${entry.id}`);
       }
       const year = entry.year ?? entry.date?.slice(0, 4);
@@ -79,6 +80,7 @@ export async function buildOfficialAlbum({ site = defaultSite, source = path.res
         throw new Error(`Incomplete legacy entry: ${entry.id}`);
       }
       const date = displayDate(entry.date, year);
+      const stamps = coverStampMetadata(entry);
       if (!entry.images?.length || JSON.stringify(entry.source.sourceImageIndexes) !== JSON.stringify(entry.images.map((image) => image.sourceImageIndex))) {
         throw new Error(`Legacy image order mismatch: ${entry.id}`);
       }
@@ -106,6 +108,7 @@ export async function buildOfficialAlbum({ site = defaultSite, source = path.res
           largeWidth: image.width, largeHeight: image.height,
           thumbWidth: image.thumbnail.width, thumbHeight: image.thumbnail.height,
           workId: entry.id,
+          ...stamps,
           ...(entry.releaseType === undefined ? {} : { releaseType: entry.releaseType }),
         });
       }

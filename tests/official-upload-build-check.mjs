@@ -56,6 +56,15 @@ try {
   const previous = await readFile(payloadPath, "utf8");
   await buildOfficialAlbum({ source, site });
   assert.equal(await readFile(payloadPath, "utf8"), previous, "upload rebuild is deterministic");
+  for (const type of ["custom", "display", "personal"]) {
+    await save("entries/upload-wing-2026.json", [{ ...entry, releaseType: type }]);
+    await buildOfficialAlbum({ source, site });
+    const assigned = JSON.parse(await readFile(payloadPath, "utf8"));
+    assert.equal(assigned.items.length, 2);
+    assert.ok(assigned.items.every((item) => item.releaseType === type && item.datePrecision === "year"), "direct photos must retain their section assignment and year-only date");
+  }
+  await save("entries/upload-wing-2026.json", [entry]);
+  await buildOfficialAlbum({ source, site });
   for (const [mutate, error] of [
     [(value) => { value.images[0].sha256 = "0".repeat(64); }, /hash mismatch/],
     [(value) => { value.images[0].thumbnail.sha256 = "0".repeat(64); }, /hash mismatch/],

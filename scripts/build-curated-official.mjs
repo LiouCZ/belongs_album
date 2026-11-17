@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { copyFile, mkdir, readFile, readdir, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { coverStampMetadata } from "./cover-stamps.mjs";
 
 const defaultSite = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -64,12 +65,13 @@ export async function buildCuratedOfficial({ site = defaultSite, source = path.r
     const slug = name.slice(0, -5);
     const publicWorks = [];
     for (const entry of ordered) {
-      if (entry.releaseType !== undefined && !["regular", "invited"].includes(entry.releaseType)) {
+      if (entry.releaseType !== undefined && !["regular", "invited", "custom", "display", "personal"].includes(entry.releaseType)) {
         throw new Error(`Invalid release type: ${entry.id}`);
       }
       if (workIds.has(entry.id)) throw new Error(`Duplicate work ID: ${entry.id}`);
       workIds.add(entry.id);
       const release = entry.releaseType === undefined ? {} : { releaseType: entry.releaseType };
+      const stamps = coverStampMetadata(entry);
       const images = [];
       for (const [imageIndex, image] of entry.images.entries()) {
         const input = sourceFile(source, image.path);
@@ -104,9 +106,10 @@ export async function buildCuratedOfficial({ site = defaultSite, source = path.r
           articleId: article.id,
           workId: entry.id,
           ...release,
+          ...stamps,
         });
       }
-      publicWorks.push({ id: entry.id, title: entry.title, description: entry.description, ...release, images });
+      publicWorks.push({ id: entry.id, title: entry.title, description: entry.description, ...release, ...stamps, images });
     }
     articles.push({
       id: article.id,
@@ -128,13 +131,14 @@ export async function buildCuratedOfficial({ site = defaultSite, source = path.r
       if (entry.reviewStatus !== "verified") throw new Error(`Unverified upload: ${entry.id}`);
       if (workIds.has(entry.id)) throw new Error(`Duplicate work ID: ${entry.id}`);
       workIds.add(entry.id);
-      if (entry.releaseType !== undefined && !["regular", "invited"].includes(entry.releaseType)) throw new Error(`Invalid release type: ${entry.id}`);
+      if (entry.releaseType !== undefined && !["regular", "invited", "custom", "display", "personal"].includes(entry.releaseType)) throw new Error(`Invalid release type: ${entry.id}`);
       if (typeof entry.title !== "string" || !entry.title.trim() || typeof entry.description !== "string" || !entry.images?.length) throw new Error(`Incomplete upload: ${entry.id}`);
       const year = entry.year ?? entry.date?.slice(0, 4);
       if (!/^20\d{2}$/.test(year)) throw new Error(`Invalid publication year: ${entry.id}`);
       if (entry.date !== null && (typeof entry.date !== "string" || !/^20\d{2}-\d{2}-\d{2}$/.test(entry.date) || Number.isNaN(Date.parse(entry.date)) || new Date(entry.date).toISOString().slice(0, 10) !== entry.date)) throw new Error(`Invalid publication date: ${entry.date}`);
       if (entry.date && entry.date.slice(0, 4) !== year) throw new Error(`Publication year mismatch: ${entry.id}`);
       const date = entry.date === null ? year : displayDate(entry.date);
+      const stamps = coverStampMetadata(entry);
       for (const [imageIndex, image] of entry.images.entries()) {
         if (typeof image.id !== "string" || !image.id || imageIds.has(image.id)) throw new Error(`Duplicate or invalid upload image ID: ${image.id}`);
         imageIds.add(image.id);
@@ -149,6 +153,7 @@ export async function buildCuratedOfficial({ site = defaultSite, source = path.r
         items.push({
           id: image.id, workId: entry.id, year, date, datePrecision: entry.date === null ? "year" : "day", index, sourceIndex,
           title: entry.title, caption: entry.description, releaseType: entry.releaseType || "regular",
+          ...stamps,
           image: relative, thumb,
           width: image.width, height: image.height, largeWidth: image.width, largeHeight: image.height,
           thumbWidth: image.thumbnail.width, thumbHeight: image.thumbnail.height,
