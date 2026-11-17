@@ -1785,7 +1785,7 @@
       "thumbHeight": 640
     },
     {
-      "id": "upload:2026-custom-gold-wing-ring:02",
+      "id": "upload:2026-custom-gold-wing-ring:01",
       "workId": "upload:2026-custom-gold-wing-ring",
       "year": "2026",
       "date": "2026",
@@ -1798,17 +1798,17 @@
       "coverStamps": [
         "gold"
       ],
-      "image": "assets/official-uploads/2026-custom-gold-wing-ring/1-02.jpg",
-      "thumb": "assets/official-uploads/2026-custom-gold-wing-ring/1-thumb-02-thumb.jpg",
-      "width": 5760,
-      "height": 3840,
-      "largeWidth": 5760,
-      "largeHeight": 3840,
+      "image": "assets/official-uploads/2026-custom-gold-wing-ring/1-01.jpg",
+      "thumb": "assets/official-uploads/2026-custom-gold-wing-ring/1-thumb-01-cover-thumb.jpg",
+      "width": 3840,
+      "height": 5760,
+      "largeWidth": 3840,
+      "largeHeight": 5760,
       "thumbWidth": 960,
       "thumbHeight": 640
     },
     {
-      "id": "upload:2026-custom-gold-wing-ring:01",
+      "id": "upload:2026-custom-gold-wing-ring:02",
       "workId": "upload:2026-custom-gold-wing-ring",
       "year": "2026",
       "date": "2026",
@@ -1821,14 +1821,14 @@
       "coverStamps": [
         "gold"
       ],
-      "image": "assets/official-uploads/2026-custom-gold-wing-ring/2-01.jpg",
-      "thumb": "assets/official-uploads/2026-custom-gold-wing-ring/2-thumb-01-thumb.jpg",
-      "width": 3840,
-      "height": 5760,
-      "largeWidth": 3840,
-      "largeHeight": 5760,
-      "thumbWidth": 640,
-      "thumbHeight": 960
+      "image": "assets/official-uploads/2026-custom-gold-wing-ring/2-02.jpg",
+      "thumb": "assets/official-uploads/2026-custom-gold-wing-ring/2-thumb-02-thumb.jpg",
+      "width": 5760,
+      "height": 3840,
+      "largeWidth": 5760,
+      "largeHeight": 3840,
+      "thumbWidth": 960,
+      "thumbHeight": 640
     },
     {
       "id": "upload:2026-custom-gold-wing-ring:03",

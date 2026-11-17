@@ -12,7 +12,7 @@ const works = [
   { id: "upload:2026-k-key", year: "2026", title: "K 钥匙", type: "personal", label: "自用作品", category: "钥匙", images: ["front", "back"], slug: "k-key" },
   { id: "upload:2026-display-k-key", year: "2026", title: "K钥匙", type: "display", label: "展示作品", category: "钥匙", images: ["01-front", "02-front-chain", "03-back-detail", "04-front-wide", "05-front-detail"], slug: "display-k-key" },
   { id: "upload:2026-custom-l-cross", year: "2026", title: "L十字", type: "custom", label: "定制作品", category: "L十字", images: ["01", "02"], slug: "custom-l-cross" },
-  { id: "upload:2026-custom-gold-wing-ring", year: "2026", title: "全金羽翼戒指", type: "custom", label: "定制作品", category: "羽翼戒指", images: ["02", "01", "03"], slug: "custom-gold-wing-ring" },
+  { id: "upload:2026-custom-gold-wing-ring", year: "2026", title: "全金羽翼戒指", type: "custom", label: "定制作品", category: "羽翼戒指", images: ["01", "02", "03"], coverThumb: "01-cover-thumb", slug: "custom-gold-wing-ring" },
   { id: "upload:2024-invited-dragon-dog-tag", year: "2024", title: "龙·狗牌", type: "invited", label: "邀约作品", category: "狗牌", images: ["front", "back"], slug: "invited-dragon-dog-tag" },
   { id: "upload:2024-invited-snake-square-tag", year: "2024", title: "蛇·方牌", type: "invited", label: "邀约作品", category: "方牌", images: ["front", "back"], slug: "invited-snake-square-tag" },
   { id: "upload:2022-invited-gold-b-ring", year: "2022", title: "全金B戒", type: "invited", label: "邀约作品", category: "B戒", images: ["front"], slug: "invited-gold-b-ring" },
@@ -36,6 +36,16 @@ for (const work of works) {
   assert.equal(entry.title, work.title);
   assert.equal(entry.releaseType, work.type);
   assert.equal(entry.description, "");
+  if (work.coverThumb) {
+    assert.equal(path.basename(entry.images[0].thumbnail.path), `${work.coverThumb}.jpg`, "ring cover must use its dedicated close crop rather than the uncropped thumbnail");
+    assert.equal(entry.images[0].thumbnail.width, 960);
+    assert.equal(entry.images[0].thumbnail.height, 640);
+    assert.deepEqual(entry.images.map((image) => image.sha256), [
+      "3718d2a1b06ee89b10cf78d4adda05ee556d0147861148744b7062a1c6b8d052",
+      "09571bd936997795a985f974211adf5985765df0477ddeb235de6230bdef9397",
+      "d85e5c058acc98e1c263336ae8c6785b7e690da7af30ccb42da9a7f53d256d62",
+    ], "a cover crop must not alter or replace any of the three full-resolution ring photos");
+  }
   for (const [index, item] of photos.entries()) {
     assert.equal(item.id, `${work.id}:${work.images[index]}`, "cover and carousel must follow the selected photo order");
     assert.equal(item.id, entry.images[index].id, "public carousel order must match canonical image order");
@@ -95,7 +105,7 @@ try {
         assert.equal(await page.locator('#gallery .cover-stamp[aria-label="古董改造"]').count(), 1, "antique snake feather must show one antique stamp on its carousel cover");
       }
       assert.equal(await page.locator("#gallery .meta").textContent(), `${work.year} 年`);
-      assert.match(await page.locator("#gallery .thumb img").getAttribute("src"), new RegExp(`${work.images[0]}-thumb\\.jpg$`), "card cover must use the selected first photo");
+      assert.match(await page.locator("#gallery .thumb img").getAttribute("src"), new RegExp(`${work.coverThumb || `${work.images[0]}-thumb`}\\.jpg$`), "card cover must use the selected full photo or its approved crop");
       await page.locator("#gallery .thumb img").scrollIntoViewIfNeeded();
       await page.locator("#gallery .thumb img").evaluate((image) => image.decode());
       assert.equal(await page.locator("#gallery .thumb img").evaluate((image) => {
