@@ -2,6 +2,7 @@
   <title>古董改造印记</title>
   <defs>
     <path id="brand-arc" d="M25 80a55 55 0 0 1 110 0"/>
+    <path id="since-arc" d="M17 80a63 63 0 0 0 126 0"/>
   </defs>
   <path d="M80 7.8C119 6.8 152.4 40.5 152 80c.9 40.5-32.7 72.6-72 72.2C40 153.4 7.7 119.8 8.2 80 7.3 40.2 40.6 7.2 80 7.8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="121 1.7 93 1.3 128 2 110"/>
   <circle cx="80" cy="80" r="66.5" stroke="currentColor" stroke-width=".65" opacity=".56"/>
@@ -12,7 +13,8 @@
     <text x="80" y="72">古董</text>
     <text x="80" y="104">改造</text>
   </g>
-  <path d="M71 116h18l-18 23m0-23 18 23H75" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="m71 116 6.7 5.7-5.8 2.3Z" fill="currentColor"/>
+  <text fill="currentColor" font-family="Georgia, 'Times New Roman', serif" font-size="13.5" letter-spacing="0">
+    <textPath href="#since-arc" startOffset="50%" text-anchor="middle">since 2019</textPath>
+  </text>
   <path d="m23.5 80 2 3-2 3-2-3Zm113 0 2 3-2 3-2-3Z" fill="currentColor"/>
 </svg>

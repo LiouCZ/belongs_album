@@ -2,6 +2,7 @@
   <title>全金作品印记</title>
   <defs>
     <path id="brand-arc" d="M25 80a55 55 0 0 1 110 0"/>
+    <path id="since-arc" d="M17 80a63 63 0 0 0 126 0"/>
   </defs>
   <path d="M80 7.5C120 7 152.5 40 152 80c.5 40-32 72.7-72 72.5C40 153 7.6 120 8 80 7.5 40 40 7.2 80 7.5Z" stroke="currentColor" stroke-width="1.8"/>
   <circle cx="80" cy="80" r="66.5" stroke="currentColor" stroke-width=".65" opacity=".56"/>
@@ -12,8 +13,9 @@
     <text x="80" y="72">全金</text>
     <text x="80" y="104">作品</text>
   </g>
-  <path d="M71 116h18l-18 23m0-23 18 23H75" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="m71 116 6.7 5.7-5.8 2.3Z" fill="currentColor"/>
+  <text fill="currentColor" font-family="Georgia, 'Times New Roman', serif" font-size="13.5" letter-spacing="0">
+    <textPath href="#since-arc" startOffset="50%" text-anchor="middle">since 2019</textPath>
+  </text>
   <circle cx="23.5" cy="83" r="1.5" fill="currentColor"/>
   <circle cx="136.5" cy="83" r="1.5" fill="currentColor"/>
 </svg>
