@@ -1,7 +1,7 @@
 (() => {
   const contacts = [
     { selector: "[data-wechat-contact]", id: "officialWechatQr", image: "assets/contact/official-wechat.png",
-      width: 412, height: 416, alt: "BELONGS-OFFICIAL 官方微信二维码", caption: "官方微信 · BELONGS-OFFICIAL" },
+      width: 412, height: 416, alt: "belongsbk 官方微信二维码", caption: "官方微信 · belongsbk" },
     { selector: "[data-wechat-account]", id: "officialWechatAccountQr", image: "assets/contact/official-wechat-account.jpg",
       width: 1086, height: 1164, alt: "BELONGS OFFICIAL 微信公众号二维码", caption: "微信公众号 · BELONGS OFFICIAL" },
   ];

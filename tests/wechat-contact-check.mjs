@@ -12,8 +12,8 @@ const browser = await chromium.launch({
   executablePath: process.env.CHROME_EXECUTABLE || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 });
 const qrContacts = [
-  { selector: "[data-wechat-contact]", name: "BELONGS-OFFICIAL", id: "officialWechatQr", width: 412, height: 416,
-    alt: "BELONGS-OFFICIAL 官方微信二维码", asset: "assets/contact/official-wechat.png", original: process.env.WECHAT_ORIGINAL_IMAGE },
+  { selector: "[data-wechat-contact]", name: "belongsbk", id: "officialWechatQr", width: 412, height: 416,
+    alt: "belongsbk 官方微信二维码", asset: "assets/contact/official-wechat.png", original: process.env.WECHAT_ORIGINAL_IMAGE },
   { selector: "[data-wechat-account]", name: "BELONGS OFFICIAL", id: "officialWechatAccountQr", width: 1086, height: 1164,
     alt: "BELONGS OFFICIAL 微信公众号二维码", asset: "assets/contact/official-wechat-account.jpg", original: process.env.WECHAT_ACCOUNT_ORIGINAL_IMAGE },
 ];
@@ -54,7 +54,7 @@ try {
         const trigger = info.getByRole("button", { name: contact.name, exact: true });
         assert.equal(await trigger.count(), 1, "add a separate official WeChat contact button");
         assert.match(await info.innerText(), /微信公众号\s+BELONGS OFFICIAL/);
-        assert.match(await info.innerText(), /官方微信\s+BELONGS-OFFICIAL/);
+        assert.match(await info.innerText(), /官方微信\s+belongsbk/);
         const panel = page.locator(`#${contact.id}`);
         assert.equal(await panel.getAttribute("role"), "tooltip");
         assert.equal(await panel.isVisible(), false);
