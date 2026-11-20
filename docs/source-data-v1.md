@@ -32,6 +32,8 @@ album_source/
 
 **以后只编辑这里的 JSON 和图片，不编辑生成的 `data/items.*` / `data/curated-official.*`，也不再运行 `.album_build/build_web_album.py`。** 所有历史图片、缩略图都已独立保存；重建不需要原 Word、迁移前的导出或旧网页数据。`backups/` 是可追溯备份，不是构建输入。
 
+作品照片的公开版本另有版权水印清单 `data/image-watermarks.json`。源照片与哈希不改；统一构建按源哈希复用已审校的公开图片，新增或变化的照片须在发布前重新审校。完整流程见 [作品图片水印](image-watermarks.md)，发布前运行 `node scripts/image-watermarks.mjs --check`。
+
 在网站目录运行统一命令：
 
 ```bash

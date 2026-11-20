@@ -146,8 +146,8 @@ try {
       await page.locator("#closeDialog").click();
       await page.locator("#searchInput").fill("");
       await page.locator('[data-release-type="regular"]').click();
-      assert.equal(await page.locator("#totalCount").textContent(), "766");
-      assert.equal(await page.evaluate(() => releaseGroups().reduce((count, group) => count + group.imageCount, 0)), 1059);
+      assert.equal(await page.locator("#totalCount").textContent(), "772");
+      assert.equal(await page.evaluate(() => releaseGroups().reduce((count, group) => count + group.imageCount, 0)), 1065);
       assert.deepEqual(errors, []);
       await page.close();
       console.log(`PASS ${work.title}: ${work.label}, category, year-only date and ${work.images.length}-photo carousel ${width}px ${view}`);

@@ -43,6 +43,7 @@ const featured = [
 ];
 
 const state = { year: "all", query: "", page: 1, pageSize: 12 };
+let activeSource = null;
 const els = {
   features: document.querySelector("#storyFeatureList"),
   catalog: document.querySelector("#storyCatalog"),
@@ -239,10 +240,34 @@ function element(tag, className, text) {
   return node;
 }
 
+function t(source, vars = {}) {
+  return window.BelongsI18n?.t(source, vars)
+    ?? source.replace(/\{(\w+)\}/g, (match, key) => vars[key] ?? match);
+}
+
+function storyField(story, field) {
+  const source = story[field] || "";
+  const primary = window.BelongsI18n?.content("stories", story.id, field, source) ?? source;
+  const yearly = window.BelongsI18n?.content("stories", story.id, `${field}:${story.year}`, source) ?? source;
+  return yearly === source ? primary : yearly;
+}
+
+function englishField(story, field) {
+  const source = story[field] || "";
+  const fields = window.BELONGS_EN?.stories?.[story.id];
+  const entry = [fields?.[`${field}:${story.year}`], fields?.[field]]
+    .find((candidate) => candidate?.source === source);
+  return entry?.en || source;
+}
+
+function storyDate(story) {
+  return story.date ? window.BelongsI18n?.date(story.date) ?? story.date : story.year;
+}
+
 function storyImage(story, className) {
   const image = element("img", className);
   image.src = story.thumb;
-  image.alt = `${story.title}的官方图文配图`;
+  image.alt = t("{title}的官方图文配图", { title: storyField(story, "title") });
   image.loading = "lazy";
   return image;
 }
@@ -252,21 +277,21 @@ function imageLink(story) {
   link.href = story.image;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-  link.title = "查看原图";
-  link.setAttribute("aria-label", `查看《${story.title}》配图原图`);
+  link.title = t("查看原图");
+  link.setAttribute("aria-label", t("查看《{title}》配图原图", { title: storyField(story, "title") }));
   link.append(storyImage(story, ""));
   return link;
 }
 
 function sourceLabel(story) {
-  if (!story.date) return "官方画册 · 跨年作品线索";
+  if (!story.date) return t("官方画册 · 跨年作品线索");
   return story.hasOriginalTitle
-    ? `官方图文《${story.title}》 · ${story.date}`
-    : `官方图文 · ${story.date}（编辑主题）`;
+    ? t("官方图文《{title}》 · {date}", { title: storyField(story, "title"), date: storyDate(story) })
+    : t("官方图文 · {date}（编辑主题）", { date: storyDate(story) });
 }
 
 function sourceButton(story) {
-  const button = element("button", "story-source-button", "查看原文");
+  const button = element("button", "story-source-button", t("查看原文"));
   button.type = "button";
   button.dataset.storyKey = story.key;
   return button;
@@ -282,9 +307,9 @@ function renderFeatures() {
     figure.append(imageLink(story));
     const copy = element("div", "story-feature-copy");
     copy.append(
-      element("span", "story-feature-meta", story.date || story.year),
-      element("h3", "", feature.title),
-      element("p", "", feature.description),
+      element("span", "story-feature-meta", storyDate(story)),
+      element("h3", "", t(feature.title)),
+      element("p", "", t(feature.description)),
       element("small", "", sourceLabel(story)),
     );
     copy.append(sourceButton(story));
@@ -298,7 +323,7 @@ function renderYearFilter() {
   const labels = [["all", "全部"], ["2021", "2021"], ["2022", "2022"], ["2023", "2023"], ["2024—2026", "2024—2026"]];
   const fragment = document.createDocumentFragment();
   for (const [value, label] of labels) {
-    const button = element("button", "story-year-button", label);
+    const button = element("button", "story-year-button", t(label));
     button.type = "button";
     button.dataset.year = value;
     fragment.append(button);
@@ -312,38 +337,50 @@ function renderEntry(story) {
   media.append(imageLink(story));
   const copy = element("div", "story-entry-copy");
   copy.append(
-    element("span", "story-entry-meta", `${story.date || story.year} · ${story.kind}`),
-    element("h3", "", story.title),
+    element("span", "story-entry-meta", `${storyDate(story)} · ${storyField(story, "kind")}`),
+    element("h3", "", storyField(story, "title")),
   );
-  if (story.topic && story.topic !== story.title) copy.append(element("span", "story-entry-topic", story.topic));
-  copy.append(element("p", "story-entry-summary", story.summary));
-  if (story.quote) copy.append(element("blockquote", "story-entry-quote", `“${story.quote}”`));
+  if (story.topic && story.topic !== story.title) copy.append(element("span", "story-entry-topic", storyField(story, "topic")));
+  copy.append(element("p", "story-entry-summary", storyField(story, "summary")));
+  if (story.quote) copy.append(element("blockquote", "story-entry-quote", `“${storyField(story, "quote")}”`));
   copy.append(element("small", "story-entry-source", sourceLabel(story)));
   copy.append(sourceButton(story));
   article.append(media, copy);
   return article;
 }
 
-function openSource(story) {
-  els.sourceTitle.textContent = story.title;
+function renderSource(story) {
+  els.sourceTitle.textContent = storyField(story, "title");
   els.sourceNote.textContent = story.date
-    ? `${story.date} · 原始图文文字，可能包含发售说明与作品清单。`
-    : "跨年主题所引代表作品的原始图文文字；各作品并非同一篇文章。";
+    ? t("{date} · 原始图文文字，可能包含发售说明与作品清单。", { date: storyDate(story) })
+    : t("跨年主题所引代表作品的原始图文文字；各作品并非同一篇文章。");
   const fragment = document.createDocumentFragment();
   for (const section of story.sourceSections) {
     const article = element("section", "story-source-section");
     const copy = element("div", "reading-copy");
-    copy.innerHTML = window.BelongsReading.format(section.text, { id: story.id }).html;
-    article.append(element("h3", "", section.label), copy);
+    const text = section.text.split("\n").map((line) => t(line)).join("\n");
+    copy.innerHTML = window.BelongsReading.format(text, { id: story.id }).html;
+    const label = section.label.replace(/^(\d{4})年(\d{1,2})月(\d{1,2})日(?: · 片段 (\d+))?$/, (_, year, month, day, part) => {
+      if (!window.BelongsI18n?.english()) return section.label;
+      const date = window.BelongsI18n.date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+      return part ? t("{date} · 片段 {part}", { date, part }) : date;
+    });
+    article.append(element("h3", "", label), copy);
     fragment.append(article);
   }
   els.sourceBody.replaceChildren(fragment);
-  els.dialog.showModal();
+}
+
+function openSource(story) {
+  activeSource = story;
+  renderSource(story);
+  if (!els.dialog.open) els.dialog.showModal();
 }
 
 function matches(story) {
   const yearMatches = state.year === "all" || story.year === state.year;
-  const text = [story.title, story.topic, story.summary, story.quote, story.kind, story.date, story.year].join(" ").toLowerCase();
+  const fields = ["title", "topic", "summary", "quote", "kind", "date", "year"];
+  const text = fields.flatMap((field) => [story[field], englishField(story, field)]).join(" ").toLowerCase();
   return yearMatches && text.includes(state.query);
 }
 
@@ -355,9 +392,9 @@ function renderCatalog() {
   const fragment = document.createDocumentFragment();
   for (const story of filtered.slice(start, start + state.pageSize)) fragment.append(renderEntry(story));
   els.catalog.replaceChildren(fragment);
-  els.count.textContent = `共 ${filtered.length} 条线索`;
+  els.count.textContent = t("共 {count} 条线索", { count: filtered.length });
   els.empty.hidden = filtered.length > 0;
-  els.pageInfo.textContent = `第 ${state.page} / ${pages} 页`;
+  els.pageInfo.textContent = t("第 {page} / {pages} 页", { page: state.page, pages });
   els.previous.disabled = state.page <= 1;
   els.next.disabled = state.page >= pages;
   for (const button of els.yearFilter.querySelectorAll("button")) {
@@ -403,8 +440,20 @@ for (const container of [els.features, els.catalog]) {
 }
 
 els.sourceClose.addEventListener("click", () => els.dialog.close());
+els.dialog.addEventListener("close", () => { activeSource = null; });
 els.dialog.addEventListener("click", (event) => {
   if (event.target === els.dialog) els.dialog.close();
+});
+
+window.addEventListener("belongs:language-change", () => {
+  const scrollY = window.scrollY;
+  const sourceScroll = els.dialog.scrollTop;
+  renderFeatures();
+  renderYearFilter();
+  renderCatalog();
+  if (activeSource && els.dialog.open) renderSource(activeSource);
+  els.dialog.scrollTop = sourceScroll;
+  window.scrollTo(0, scrollY);
 });
 
 setupIllustrationVoices();

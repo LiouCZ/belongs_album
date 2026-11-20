@@ -48,12 +48,20 @@ if (nav) {
   document.body.append(dialog);
 
   let lastQuoteIndex = -1;
+  function renderQuote() {
+    if (lastQuoteIndex < 0) return;
+    const selected = stampQuotes[lastQuoteIndex];
+    const t = (value) => window.BelongsI18n?.t(value) ?? value;
+    quoteText.textContent = `“${t(selected.text)}”`;
+    quoteSource.textContent = window.BelongsI18n?.english()
+      ? `Official archive: ${t(selected.title)} · ${selected.year}`
+      : `官方图文《${selected.title}》 · ${selected.year}`;
+  }
+  window.addEventListener("belongs:language-change", renderQuote);
   trigger.addEventListener("click", () => {
     const choices = stampQuotes.map((_, index) => index).filter((index) => index !== lastQuoteIndex);
     lastQuoteIndex = choices[Math.floor(Math.random() * choices.length)];
-    const selected = stampQuotes[lastQuoteIndex];
-    quoteText.textContent = `“${selected.text}”`;
-    quoteSource.textContent = `官方图文《${selected.title}》 · ${selected.year}`;
+    renderQuote();
     window.dispatchEvent(new Event("belongs:refresh-discovery"));
     dialog.showModal();
   });

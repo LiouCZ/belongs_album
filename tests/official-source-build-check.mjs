@@ -34,7 +34,7 @@ try {
   }
   const curated = JSON.parse(readFileSync(path.join(output, "data/curated-official.json"), "utf8"));
   assert.deepEqual(curated.articles, JSON.parse(readFileSync(path.join(root, "data/curated-official.json"), "utf8")).articles);
-  assert.equal(curated.items.filter((item) => item.articleId).length, 48);
+  assert.equal(curated.items.filter((item) => item.articleId).length, 54);
   const uploaded = readdirSync(path.join(source, "entries")).filter((name) => name.startsWith("upload-") && name.endsWith(".json"))
     .flatMap((name) => JSON.parse(readFileSync(path.join(source, "entries", name), "utf8")));
   assert.equal(curated.items.filter((item) => !item.articleId).length, uploaded.reduce((count, entry) => count + entry.images.length, 0));

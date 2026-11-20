@@ -1,0 +1,70 @@
+.language-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 0;
+  color: var(--header-secondary, #60686a);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.language-control select {
+  width: 112px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.language-control select option { color: #111315; background: #f4f1ea; }
+.language-control select:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.album-header > .language-control { grid-column: 1 / -1; justify-self: end; }
+.vip-hero > .language-control { margin: 0 0 20px; color: #60686a; }
+.is-exporting .language-control { display: none; }
+
+html[lang="en"] .brand-description-line { display: inline; }
+html[lang="en"] .brand-description-line + .brand-description-line::before { content: " "; }
+html[lang="en"] .brand-description { max-width: 720px; line-height: 1.65; }
+html[lang="en"] .reading-copy,
+html[lang="en"] .detail-caption,
+html[lang="en"] .story-source-body { overflow-wrap: anywhere; word-break: normal; line-height: 1.8; }
+html[lang="en"] .vip-hero h1,
+html[lang="en"] .brand-title,
+html[lang="en"] .brand-subtitle { letter-spacing: 0; overflow-wrap: anywhere; }
+html[lang="en"] .brand-closing-quote { letter-spacing: 0; }
+html[lang="en"] .pills label { max-width: 100%; }
+html[lang="en"] .pills label span { overflow-wrap: anywhere; white-space: normal; }
+html[lang="en"] .detail-spec-row { grid-template-columns: minmax(80px, 110px) minmax(0, 1fr); }
+html[lang="en"] .release-nav { flex-wrap: wrap; }
+
+@media (min-width: 761px) {
+  .vip-page:not(.rules-page) > .vip-hero > .language-control { zoom: 1.53846154; }
+}
+
+@media (max-width: 680px) {
+  .language-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .album-header > .language-control { margin-top: 2px; }
+  html[lang="en"] .album-navigation .site-nav { gap: 2px; }
+  html[lang="en"] .album-navigation .site-nav .top-link { padding-inline: 6px; font-size: 12px; }
+  html[lang="en"] .brand-description { font-size: 12px; }
+  html[lang="en"] .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[lang="en"] .controls .search-wrap { grid-column: 1 / -1; }
+  html[lang="en"] .official-album .category-wrap { grid-column: 1 / -1; }
+  html[lang="en"] .detail-spec-row { grid-template-columns: 76px minmax(0, 1fr); }
+  html[lang="en"] .player-album .controls { grid-template-columns: minmax(0, 1fr) 100px; }
+  html[lang="en"] .player-album .controls .search-wrap { grid-column: auto; }
+  html[lang="en"] .vip-hero h1 { font-size: 22px; line-height: 1.35; }
+  html[lang="en"] .back-link, html[lang="en"] .rules-link { font-size: 11px; padding-inline: 8px; }
+}
+
+@media (max-width: 360px) {
+  html[lang="en"] .album-navigation .site-nav { gap: 0; }
+  html[lang="en"] .album-navigation .site-nav .top-link { padding-inline: 3px; font-size: 11px; }
+}

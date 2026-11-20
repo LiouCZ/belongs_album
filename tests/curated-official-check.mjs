@@ -18,13 +18,14 @@ const sourceArticles = [
   ["nPVJ0e54hqny1x9BH473mw", "2026-10-09", "——感受留白的温柔——", 7],
   ["afUnYP9DPfBYOcFBT6-XCg", "2026-10-23", "——被温暖环绕——", 7],
   ["ZaunOWM_hnsku97nyFtJhA", "2026-11-06", "——细节环绕——", 6],
+  ["gRL-uK_4EeANmPEkVfJKmQ", "2026-11-20", "——小雪纷飞的浪漫——", 6],
 ];
 const chromePath = process.env.CHROME_EXECUTABLE || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 async function run() {
   const browser = await chromium.launch({ executablePath: chromePath });
   try {
-    for (const width of [390, 1440]) {
+    for (const width of [320, 390, 1440]) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       await page.goto(`file://${path.join(root, "index.html")}`);
       await page.locator("#closeIntro").click();
@@ -46,6 +47,12 @@ async function run() {
         if (slug === "ZaunOWM_hnsku97nyFtJhA") {
           assert.deepEqual(await page.locator(".gallery .card h3").allTextContents(),
             ["雏翼戒指", "平打戒指", "S十字", "马首", "莫比乌斯手镯", "平打手镯"]);
+        }
+        if (slug === "gRL-uK_4EeANmPEkVfJKmQ") {
+          assert.deepEqual(await page.locator(".gallery .card h3").allTextContents(),
+            ["平打戒指", "莫比乌斯戒指", "M十字", "初心羽", "羽翼", "Mini羽翼"]);
+          assert.equal(await page.locator(".gallery .card .cover-stamp").count(), 1);
+          assert.equal(await page.locator(".gallery .card").last().locator(".cover-stamp").count(), 1);
         }
         await page.locator(".gallery .card").first().click();
         assert.equal((await page.locator("#detailCaption").textContent()).trim().endsWith(theme), true);
@@ -73,6 +80,7 @@ async function run() {
         ...Array(7).fill("2026年10月9日"),
         ...Array(7).fill("2026年10月23日"),
         ...Array(6).fill("2026年11月6日"),
+        ...Array(6).fill("2026年11月20日"),
       ];
       for (const view of ["grid", "list"]) {
         await page.locator(`#viewSwitch [data-view="${view}"]`).click();

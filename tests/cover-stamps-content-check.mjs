@@ -30,6 +30,8 @@ for (const [id, expected] of [
   ["legacy:2021-210-dc3c222d58", ["gold"]],
   ["legacy:2021-364-326b2f9297", ["antique"]],
   ["wechat:3E-K4wxH146_V9z49av25A:12", ["gold"]],
+  ["wechat:gRL-uK_4EeANmPEkVfJKmQ:06", ["gold"]],
+  ["wechat:gRL-uK_4EeANmPEkVfJKmQ:01", []],
   ["upload:2026-xianjin-wing", []],
   ["upload:2025-invited-snake-chain", []],
   ["upload:2026-invited-goldtip-chuxin-feather", []],

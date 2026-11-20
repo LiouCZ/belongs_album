@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { buildCuratedOfficial } from "./build-curated-official.mjs";
 import { coverStampMetadata } from "./cover-stamps.mjs";
+import { preserveReviewedWatermarks } from "./image-watermarks.mjs";
 
 const defaultSite = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -133,6 +134,8 @@ export async function buildOfficialAlbum({ site = defaultSite, source = path.res
     const json = JSON.stringify(payload, null, 2);
     await writeFile(path.join(staging, "data/items.json"), `${json}\n`);
     await writeFile(path.join(staging, "data/items.js"), `window.BELONGS_DATA = ${json};\n`);
+    const published = await readFile(path.join(site, "data/image-watermarks.json")).then(() => site, () => defaultSite);
+    await preserveReviewedWatermarks({ site: staging, published });
     await cp(staging, site, { recursive: true });
   } finally {
     await rm(staging, { recursive: true, force: true });

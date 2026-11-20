@@ -34,6 +34,7 @@
     "2024-083-cb292cc583": { headings: ["*发售内容："] },
     "2026-017-9f1a80038b": { inlineType: {
       text: "已固定造型独立雕刻鹰首 符节 反战 羽翼", type: "已固定造型独立雕刻",
+      englishType: "Established form, individually carved.",
     } },
     "2026-061-f39b5c1582": { headings: ["*儿童节钥匙"], continuations: {
       "*元素：鎏金葡萄叶&鎏金茛苕.花、": "六一字样、金沙漏。",
@@ -81,64 +82,75 @@
   const numbering = /^([ \t]*(?:[❶-❿①-⑳]|\d{1,2}\s*(?:->|→|[–—*]|-(?!\d)|[.．、](?!\d)))[ \t]*)(.+)$/;
   const signature = /^\s*[—–-]{2,}\s*BELONGS\b.*[—–-]{2,}\s*$/i;
   const field = /^([ \t]*[*＊]?[ \t]*)(搭配|规格|材质|尺寸|尺码|参考重量|重量|克重|长度|宽度|直径|制作类型|类型|元素|数量|备注)([：:][ \t]*)(.+)$/;
+  const englishField = /^([ \t]*[*＊]?[ \t]*)(Pairing|Specifications?|Materials?|Size|Reference weight|Weight|Length|Width|Diameter|Making|Types?|Elements|Motifs|Quantity|Notes?)(:[ \t]*)(.+)$/i;
   const making = /^(?:固定品类|即兴|(?:已|非|不)?固定造型[ \t]*(?:独立)?(?:雕刻|錾刻)|随机造型独立雕刻|宽度厚度近似、独立制作雕刻)$/;
 
-  function format(value, { id = "", theme = "", trustedSpecs = false } = {}) {
+  function format(value, { id = "", theme = "", trustedSpecs = false, language = "zh", source = "" } = {}) {
     const raw = String(value || "");
+    const translated = language === "en" && !/[\u3400-\u9fff]/u.test(raw);
     const suffix = theme && raw.endsWith(`\n\n${theme}`) ? `\n\n${theme}` : "";
     const body = suffix ? raw.slice(0, -suffix.length) : raw;
     const parts = body.split(/(\r\n|\n|\r)/);
+    const sourceParts = language === "en" && raw !== source && source.split(/\r\n|\n|\r/).length === raw.split(/\r\n|\n|\r/).length
+      ? source.split(/(\r\n|\n|\r)/) : null;
     const lines = [];
     for (let index = 0; index < parts.length; index += 2) {
-      if (parts[index] || parts[index + 1]) lines.push({ text: parts[index], after: parts[index + 1] || "" });
+      if (parts[index] || parts[index + 1]) lines.push({ text: parts[index], original: sourceParts?.[index] ?? parts[index], after: parts[index + 1] || "" });
     }
     const key = id.replace(/^legacy:/, "");
-    const rule = special[key] && anchors[key].every((anchor) => lines.filter((line) => line.text === anchor).length === 1) ? special[key] : {};
+    const rule = special[key] && anchors[key].every((anchor) => lines.filter((line) => line.original === anchor).length === 1) ? special[key] : {};
     if (rule.inlineType) {
-      const index = lines.findIndex((line) => line.text === rule.inlineType.text);
+      const index = lines.findIndex((line) => line.original === rule.inlineType.text);
       const line = lines[index];
-      lines.splice(index, 1, { text: rule.inlineType.type, after: "" },
-        { text: line.text.slice(rule.inlineType.type.length), after: line.after });
+      const type = sourceParts ? rule.inlineType.englishType : rule.inlineType.type;
+      if (type && line.text.startsWith(type) && line.text.length > type.length) {
+        lines.splice(index, 1, { text: type, original: rule.inlineType.type, after: "" },
+          { text: line.text.slice(type.length), original: rule.inlineType.text.slice(rule.inlineType.type.length), after: line.after });
+      }
     }
     const inferred = new Map();
     const verifiedSpecs = new Set();
     // Infer bare fields only inside the verified type / elements / specification structure.
     for (let index = 0; index < lines.length; index += 1) {
-      if (!making.test(lines[index].text)) continue;
+      if (!making.test(lines[index].original)) continue;
       let end = index + 1;
-      while (end < lines.length && end <= index + 3 && lines[end].text.trim()
-        && lines[end].text.length <= 160 && !/[。！？；：:]/.test(lines[end].text)
-        && !heading.test(lines[end].text) && !numbering.test(lines[end].text) && !signature.test(lines[end].text)) end += 1;
-      const labels = lines.slice(end, end + 3).map((line) => line.text.match(field)?.[2]);
+      while (end < lines.length && end <= index + 3 && lines[end].original.trim()
+        && lines[end].original.length <= 160 && !/[。！？；：:]/.test(lines[end].original)
+        && !heading.test(lines[end].original) && !numbering.test(lines[end].original) && !signature.test(lines[end].original)) end += 1;
+      const labels = lines.slice(end, end + 3).map((line) => line.original.match(field)?.[2]);
       if (end === index + 1 || labels.join("|") !== "搭配|规格|材质") continue;
-      inferred.set(index, { label: "制作类型", content: lines[index].text, count: 1, derived: true });
+      inferred.set(index, { label: translated ? "Making" : "制作类型", content: lines[index].text, count: 1, derived: true });
       const elements = lines.slice(index + 1, end);
-      inferred.set(index + 1, { label: "元素", content: elements.map((line, offset) =>
+      inferred.set(index + 1, { label: translated ? "Elements" : "元素", content: elements.map((line, offset) =>
         line.text + (offset < elements.length - 1 ? line.after : "")).join(""), count: elements.length, derived: true });
       for (let offset = 0; offset < 3; offset += 1) verifiedSpecs.add(end + offset);
     }
     for (const element of rule.elements || []) {
-      const index = lines.findIndex((line) => line.text === element);
-      inferred.set(index, { label: "元素", content: element, count: 1, derived: true });
+      const index = lines.findIndex((line) => line.original === element);
+      inferred.set(index, { label: translated ? "Elements" : "元素", content: lines[index].text, count: 1, derived: true });
     }
     const specification = (index) => {
       if (inferred.has(index)) return inferred.get(index);
-      const found = lines[index]?.text.match(field);
+      const original = lines[index]?.original.match(field);
+      const found = lines[index]?.text.match(field) || (language === "en" && original ? lines[index]?.text.match(englishField) : null);
       if (!found) return null;
       const [, prefix, label, colon, content] = found;
-      const explicit = prefix.includes("*") || prefix.includes("＊");
-      const factual = /(?:\d|配方|纯银|黄金|白银|古币|银币|皮绳|标准|^Mini$|^[SMLX]+$)/i.test(content) && !/[。！？]/.test(content);
+      const sourcePrefix = original?.[1] ?? prefix;
+      const explicit = sourcePrefix.includes("*") || sourcePrefix.includes("＊");
+      const meaning = original?.[4] ?? content;
+      const factual = /(?:\d|配方|纯银|黄金|白银|古币|银币|皮绳|标准|^Mini$|^[SMLX]+$)/i.test(meaning) && !/[。！？]/.test(meaning);
       return trustedSpecs || verifiedSpecs.has(index) || explicit || factual || (label === "制作类型" && making.test(content))
         ? { prefix, label, colon, content, count: 1 } : null;
     };
     const sectionNames = new Set(rule.headings || []);
     const ends = new Set(rule.paragraphEnds || []);
-    const verseEnd = rule.verseBefore ? lines.findIndex((line) => line.text === rule.verseBefore) : -1;
-    const autoVerse = rule.verse || (lines.length >= 4 && lines.length <= 12 && body.length < 350
-      && lines.some((line) => signature.test(line.text))
-      && !lines.some((line) => field.test(line.text) || numbering.test(line.text) || heading.test(line.text)));
-    const compact = body.length < 240 && lines.length > 1 && !lines.some((line) =>
-      heading.test(line.text) || numbering.test(line.text) || sectionNames.has(line.text) || signature.test(line.text));
+    const verseEnd = rule.verseBefore ? lines.findIndex((line) => line.original === rule.verseBefore) : -1;
+    const sourceLength = sourceParts ? sourceParts.slice(0, parts.length).join("").length : body.length;
+    const autoVerse = rule.verse || (lines.length >= 4 && lines.length <= 12 && sourceLength < 350
+      && lines.some((line) => signature.test(line.original))
+      && !lines.some((line) => field.test(line.original) || numbering.test(line.original) || heading.test(line.original)));
+    const compact = sourceLength < 240 && lines.length > 1 && !lines.some((line) =>
+      heading.test(line.original) || numbering.test(line.original) || sectionNames.has(line.original) || signature.test(line.original));
     const paragraphOnBlank = /\r?\n[ \t]*\r?\n/.test(body);
     const output = [];
     let pending = [];
@@ -185,9 +197,9 @@
         output.push(`<p class="reading-signature">${escape(text)}</p>${escape(line.after)}`);
         continue;
       }
-      if (heading.test(text.trim()) || sectionNames.has(text)) {
+      if (heading.test(line.original.trim()) || sectionNames.has(line.original)) {
         flush();
-        note = /^(说明|购买方式)/.test(text.trim());
+        note = /^(说明|购买方式)/.test(line.original.trim());
         output.push(`<h4 class="reading-heading${note ? " reading-note" : ""}">${escape(text)}</h4>${escape(line.after)}`);
         continue;
       }
@@ -201,13 +213,13 @@
           let { count } = specification(index);
           let value = content;
           let after = lines[index + count - 1].after;
-          if (rule.continuations?.[current.text] && rule.continuations[current.text] === lines[index + 1]?.text) {
+          if (rule.continuations?.[current.original] && rule.continuations[current.original] === lines[index + 1]?.original) {
             value += current.after + lines[index + 1].text;
             after = lines[index + 1].after;
             count += 1;
           }
           const syntax = prefix ? `<span class="reading-syntax" aria-hidden="true">${escape(prefix)}</span>` : "";
-          const term = derived ? `<dt data-label="${escape(label)}：" aria-label="${escape(label)}"></dt>`
+          const term = derived ? `<dt data-label="${escape(label)}${translated ? ":" : "："}" aria-label="${escape(label)}"></dt>`
             : `<dt>${syntax}${escape(label + colon)}</dt>`;
           rows.push(`<div class="detail-spec-row">${term}<dd>${escape(value)}</dd></div>${escape(after)}`);
           index += count;
@@ -228,7 +240,7 @@
       }
       pending.push(line);
       openParentheses = Math.max(0, balance(text));
-      if (!openParentheses && (note || (!paragraphOnBlank && !ends.size && !compact) || ends.has(text))) flush();
+      if (!openParentheses && (note || (!paragraphOnBlank && !ends.size && !compact) || ends.has(line.original))) flush();
     }
     flush();
     if (suffix) output.push(`\n\n<p class="detail-theme reading-theme">${escape(theme)}</p>`);

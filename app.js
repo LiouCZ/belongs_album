@@ -12,10 +12,20 @@ const state = {
   pageSize: 20,
   activeGroup: null,
   activeImageIndex: 0,
+  activeArticleId: null,
   articles: new Map(),
   lastDiscoveryId: null,
   view: "grid",
 };
+
+const t = (source, variables = {}) => window.BelongsI18n?.t(source, variables)
+  ?? String(source).replace(/\{(\w+)\}/g, (match, key) => variables[key] ?? match);
+const english = () => Boolean(window.BelongsI18n?.english());
+const displayDate = (value) => window.BelongsI18n?.date(value) ?? value;
+
+function translatedWork(item, field, source) {
+  return window.BelongsI18n?.content("works", item.workId || item.id, field, source) ?? source;
+}
 
 const officialReleaseLabels = {
   regular: "常规发售",
@@ -35,7 +45,7 @@ function coverStampsHtml(item) {
   const stamps = coverStamps(item);
   if (!stamps.length) return "";
   const position = ["top-left", "bottom-right", "bottom-left"].includes(item.coverStampPosition) ? item.coverStampPosition : "top-right";
-  return `<span class="cover-stamps" data-position="${position}">${stamps.map((stamp) => `<span class="cover-stamp cover-stamp--${stamp}" role="img" aria-label="${coverStampLabels[stamp]}"></span>`).join("")}</span>`;
+  return `<span class="cover-stamps" data-position="${position}">${stamps.map((stamp) => `<span class="cover-stamp cover-stamp--${stamp}" role="img" aria-label="${t(coverStampLabels[stamp])}"></span>`).join("")}</span>`;
 }
 
 const els = {
@@ -156,15 +166,19 @@ function sortOfficialGroups(groups) {
 }
 
 function groupDate(group, includeYear = false) {
-  if (group.datePrecision === "year" || group.date === group.year) return `${group.year} 年`;
-  return `${group.date}${includeYear ? ` · ${group.year}` : ""}`;
+  if (group.datePrecision === "year" || group.date === group.year) return t("{year} 年", { year: group.year });
+  return `${displayDate(group.date)}${includeYear && !english() ? ` · ${group.year}` : ""}`;
 }
 
 function searchableText(group) {
   const itemText = group.items
     .map((item) => [item.year, item.date, item.title, item.caption, item.index, item.sourceIndex].join(" "))
     .join(" ");
-  return normalize([group.collection, group.year, group.date, group.title, group.caption, group.imageCount, itemText].join(" "));
+  const item = group.items[0];
+  const translations = window.BELONGS_EN?.works?.[item.workId || item.id];
+  const translated = ["title", "caption"].map((field) => translations?.[field]?.source === group[field] ? translations[field].en : "");
+  const categories = (group.categories || []).map((category) => window.BELONGS_EN?.text?.[category] || "");
+  return normalize([group.collection, window.BELONGS_EN?.text?.[group.collection], group.year, group.date, group.title, group.caption, group.imageCount, itemText, ...translated, ...categories].join(" "));
 }
 
 function escapeHtml(value) {
@@ -178,19 +192,29 @@ function escapeHtml(value) {
 
 function excerpt(text, maxLength = 110) {
   const cleaned = String(text || "").replace(/\s+/g, " ").trim();
-  if (!cleaned) return "无文字说明";
+  if (!cleaned) return t("无文字说明");
   return cleaned.length > maxLength ? `${cleaned.slice(0, maxLength).trim()}...` : cleaned;
 }
 
 function workCopy(group) {
   const item = group.items?.[0] || group;
+  const translatedTitle = translatedWork(item, "title", group.title);
+  const translatedCaption = translatedWork(item, "caption", group.caption);
   const title = els.playerAlbum ? { heading: group.title, description: "" } : window.BelongsReading.title(group.title, {
     id: item.workId || item.id, caption: group.caption,
   });
+  const heading = translatedWork(item, "heading", title.heading);
+  const lead = translatedWork(item, "lead", title.description);
   return {
-    title: title.heading,
-    caption: [title.description, group.caption].filter(Boolean).join("\n\n"),
+    title: title.description ? heading : translatedTitle,
+    caption: [lead, translatedCaption].filter(Boolean).join("\n\n"),
+    sourceCaption: [title.description, group.caption].filter(Boolean).join("\n\n"),
   };
+}
+
+function articleTheme(article) {
+  const source = article?.theme?.text || "";
+  return window.BelongsI18n?.content("articles", article?.id, "theme", source) ?? source;
 }
 
 function usesCaptionPlaceholder(group) {
@@ -202,7 +226,7 @@ function renderYearFilter(years) {
   if (!els.yearFilter) return;
   const options = ["all", ...years]
     .map((year) => {
-      const label = year === "all" ? "全部年份" : `${year} 年`;
+      const label = year === "all" ? t("全部年份") : t("{year} 年", { year });
       return `<option value="${escapeHtml(year)}">${escapeHtml(label)}</option>`;
     })
     .join("");
@@ -220,7 +244,7 @@ function normalizeReleaseType(type) {
 }
 
 function releaseLabel(type = state.releaseType) {
-  return officialReleaseLabels[normalizeReleaseType(type)];
+  return t(officialReleaseLabels[normalizeReleaseType(type)]);
 }
 
 function renderReleaseNav() {
@@ -274,7 +298,7 @@ function renderCollectionFilter(collections) {
   const options = collections.length > 1 ? ["all", ...collections] : collections;
   els.collectionFilter.innerHTML = options
     .map((collection) => {
-      const label = collection === "all" ? "全部合集" : collection;
+      const label = t(collection === "all" ? "全部合集" : collection);
       return `<button class="chip ${collection === state.collection ? "is-active" : ""}" type="button" data-collection="${escapeHtml(collection)}" aria-pressed="${collection === state.collection}">${escapeHtml(label)}</button>`;
     })
     .join("");
@@ -287,7 +311,7 @@ function renderCategoryFilter(groups) {
     for (const category of group.categories) counts.set(category, (counts.get(category) || 0) + 1);
   }
   const option = (value, label, count, disabled = false) =>
-    `<option value="${escapeHtml(value)}"${disabled ? " disabled" : ""}><span class="select-option-label">${escapeHtml(label)}</span> <span class="select-option-count">${count} 组</span></option>`;
+    `<option value="${escapeHtml(value)}"${disabled ? " disabled" : ""}><span class="select-option-label">${escapeHtml(t(label))}</span> <span class="select-option-count">${t("{count} 组", { count })}</span></option>`;
   const options = option("all", "全部品类", groups.length) + state.categories.map((category) => {
     const count = counts.get(category) || 0;
     return option(category, category, count, count === 0 && category !== state.category);
@@ -305,38 +329,41 @@ function renderCollectionSpotlight() {
   els.collectionSpotlight.hidden = !cover;
   if (!cover) return;
   els.collectionCover.src = cover.thumb;
-  els.collectionTitle.textContent = state.collection === "all" ? "玩家分享合集" : state.collection;
+  els.collectionTitle.textContent = t(state.collection === "all" ? "玩家分享合集" : state.collection);
   const imageCount = groups.reduce((total, group) => total + group.imageCount, 0);
-  els.collectionCount.textContent = `${groups.length} 组作品 · ${imageCount} 张图片`;
+  els.collectionCount.textContent = t("{count} 组作品 · {images} 张图片", { count: groups.length, images: imageCount });
 }
 
 function renderCards(items) {
   if (els.playerAlbum) {
-    els.gallery.innerHTML = items.map((item) => `
-      <article class="card player-card" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
+    els.gallery.innerHTML = items.map((item) => {
+      const copy = workCopy(item);
+      return `
+      <article class="card player-card" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("查看 {title}", { title: copy.title }))}">
         <div class="thumb${coverStamps(item).length ? " has-cover-stamps" : ""}">
-          <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
+          <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(copy.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
           ${coverStampsHtml(item)}
-          ${item.imageCount > 1 ? `<span class="image-count">${item.imageCount} 张</span>` : ""}
+          ${item.imageCount > 1 ? `<span class="image-count">${t("{count} 张", { count: item.imageCount })}</span>` : ""}
         </div>
         <div class="card-body">
-          <h3>${escapeHtml(item.title)}</h3>
-          ${item.caption ? `<p class="excerpt">${escapeHtml(excerpt(item.caption))}</p>` : ""}
+          <h3>${escapeHtml(copy.title)}</h3>
+          ${copy.caption ? `<p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>` : ""}
         </div>
       </article>
-    `).join("");
+    `;
+    }).join("");
     return;
   }
   if (els.viewSwitch && state.view === "list") {
     els.gallery.innerHTML = items.map((item) => {
       const copy = workCopy(item);
       return `
-      <article class="card card-list ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
-        <div class="thumb${coverStamps(item).length ? " has-cover-stamps" : ""}"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />${coverStampsHtml(item)}</div>
+      <article class="card card-list ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("查看 {title}", { title: copy.title }))}">
+        <div class="thumb${coverStamps(item).length ? " has-cover-stamps" : ""}"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(copy.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />${coverStampsHtml(item)}</div>
         <div class="card-body">
           <p class="meta">${escapeHtml(groupDate(item))}</p>
           <div class="list-details">
-            <span class="list-count">${escapeHtml(item.year)} · ${item.imageCount} 张</span>
+            <span class="list-count">${escapeHtml(item.year)} · ${t("{count} 张", { count: item.imageCount })}</span>
             <h3>${window.BelongsReading.headingHtml(copy.title)}</h3>
             ${copy.caption || usesCaptionPlaceholder(item) ? `<p class="excerpt">${escapeHtml(excerpt(copy.caption))}</p>` : ""}
           </div>
@@ -352,11 +379,11 @@ function renderCards(items) {
       (item) => {
         const copy = workCopy(item);
         return `
-        <article class="card ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="查看 ${escapeHtml(item.title)}">
+        <article class="card ${item.articleId ? "curated-card" : ""}" tabindex="0" role="button" data-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(t("查看 {title}", { title: copy.title }))}">
           <div class="thumb${coverStamps(item).length ? " has-cover-stamps" : ""}">
-            <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
+            <img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(copy.title)}" loading="lazy" width="${item.thumbWidth}" height="${item.thumbHeight}" />
             ${coverStampsHtml(item)}
-            ${item.imageCount > 1 ? `<span class="image-count">${item.imageCount} 张</span>` : ""}
+            ${item.imageCount > 1 ? `<span class="image-count">${t("{count} 张", { count: item.imageCount })}</span>` : ""}
           </div>
           <div class="card-body">
             <p class="meta">${escapeHtml(groupDate(item, true))}</p>
@@ -377,9 +404,9 @@ function setView(view, updateUrl = false) {
   state.view = nextView;
   els.albumMain.classList.toggle("is-list-view", nextView === "list");
   document.body.classList.toggle("view-list-page", nextView === "list");
-  els.searchInput.placeholder = nextView === "list"
+  els.searchInput.placeholder = t(nextView === "list"
     ? "搜索标题、日期或内容"
-    : "输入标题、日期、年份、材质、关键词...";
+    : "输入标题、日期、年份、材质、关键词...");
   for (const button of els.viewSwitch.querySelectorAll("[data-view]")) {
     button.setAttribute("aria-pressed", String(button.dataset.view === nextView));
   }
@@ -401,8 +428,14 @@ function datedGroup(group) {
   return { group, year, month, day, key: year * 10000 + month * 100 + day };
 }
 
-function renderDiscovery() {
+let discoveryCopy = null;
+
+function renderDiscovery(preserve = false) {
   if (!els.discovery) return;
+  if (preserve === true && discoveryCopy) {
+    renderDiscoveryCopy();
+    return;
+  }
   const now = new Date();
   const todayKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
   const dated = releaseGroups().map(datedGroup).filter(Boolean);
@@ -418,9 +451,6 @@ function renderDiscovery() {
   const selectable = freshPool.length ? freshPool : dailyPool;
   const daily = selectable[Math.floor(Math.random() * selectable.length)].group;
   state.lastDiscoveryId = daily.id;
-  els.dailyPick.dataset.discoveryId = daily.id;
-  els.dailyPick.setAttribute("aria-label", `查看今日一件：${daily.title}`);
-  els.dailyPick.innerHTML = `<img src="${escapeHtml(daily.thumb)}" alt="" width="${daily.thumbWidth}" height="${daily.thumbHeight}" /><span><strong>${escapeHtml(workCopy(daily).title)}</strong><small>${escapeHtml(daily.date)}</small></span>`;
 
   const past = dated.filter((entry) => entry.year < now.getFullYear());
   const month = now.getMonth() + 1;
@@ -434,13 +464,23 @@ function renderDiscovery() {
   }
   const trace = tracePool.slice(0, 3);
   const monthNames = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
-  els.timeTraceLabel.textContent = exact.length
-    ? `往年今日 · ${month}月${day}日`
-    : sameMonth.length ? `${monthNames[month - 1]}月旧作` : "往年作品";
+  discoveryCopy = { daily, trace, month, day, exact: exact.length, sameMonth: sameMonth.length,
+    monthLabel: `${monthNames[month - 1]}月旧作` };
+  renderDiscoveryCopy();
+}
+
+function renderDiscoveryCopy() {
+  const { daily, trace, month, day, exact, sameMonth, monthLabel } = discoveryCopy;
+  els.dailyPick.dataset.discoveryId = daily.id;
+  els.dailyPick.setAttribute("aria-label", t("查看今日一件：{title}", { title: workCopy(daily).title }));
+  els.dailyPick.innerHTML = `<img src="${escapeHtml(daily.thumb)}" alt="" width="${daily.thumbWidth}" height="${daily.thumbHeight}" /><span><strong>${escapeHtml(workCopy(daily).title)}</strong><small>${escapeHtml(displayDate(daily.date))}</small></span>`;
+  els.timeTraceLabel.textContent = exact
+    ? t("往年今日 · {month}月{day}日", { month, day })
+    : sameMonth ? (english() ? `From the archive · ${new Intl.DateTimeFormat("en", { month: "long" }).format(new Date(2000, month - 1, 1))}` : monthLabel) : t("往年作品");
   els.timeTrace.innerHTML = trace.map(({ group }) => `
-    <button type="button" class="discovery-trace-item" data-discovery-id="${escapeHtml(group.id)}" title="查看${escapeHtml(group.title)}" aria-label="查看${escapeHtml(group.title)}">
+    <button type="button" class="discovery-trace-item" data-discovery-id="${escapeHtml(group.id)}" title="${escapeHtml(t("查看 {title}", { title: workCopy(group).title }))}" aria-label="${escapeHtml(t("查看 {title}", { title: workCopy(group).title }))}">
       <img src="${escapeHtml(group.thumb)}" alt="" width="${group.thumbWidth}" height="${group.thumbHeight}" />
-      <span><strong>${escapeHtml(workCopy(group).title)}</strong><small>${escapeHtml(group.date)}</small></span>
+      <span><strong>${escapeHtml(workCopy(group).title)}</strong><small>${escapeHtml(displayDate(group.date))}</small></span>
     </button>
   `).join("");
 }
@@ -458,7 +498,7 @@ function renderPagination() {
   const pages = totalPages();
   state.page = Math.min(Math.max(1, state.page), pages);
   els.pagination.hidden = state.filtered.length === 0;
-  els.pageInfo.textContent = `第 ${state.page} / ${pages} 页`;
+  els.pageInfo.textContent = t("第 {page} / {pages} 页", { page: state.page, pages });
   els.firstPage.disabled = els.prevPage.disabled = state.page <= 1;
   els.nextPage.disabled = els.lastPage.disabled = state.page >= pages;
   const first = Math.max(1, Math.min(state.page - 2, pages - 4));
@@ -467,7 +507,7 @@ function renderPagination() {
     { length: last - first + 1 },
     (_, offset) => {
       const page = first + offset;
-      return `<button type="button" data-page="${page}" aria-label="第 ${page} 页"${page === state.page ? ' class="is-current" aria-current="page"' : ""}>${page}</button>`;
+      return `<button type="button" data-page="${page}" aria-label="${t("第 {page} 页", { page })}"${page === state.page ? ' class="is-current" aria-current="page"' : ""}>${page}</button>`;
     }
   ).join("")}${last < pages ? '<span class="page-gap" aria-hidden="true">…</span>' : ""}`;
 }
@@ -492,7 +532,7 @@ function applyFilters() {
   if (els.releaseNav) {
     const uncollected = scoped.length === 0;
     els.emptyState.classList.toggle("empty--uncollected", uncollected);
-    els.emptyState.querySelector("h2").textContent = uncollected ? `${releaseLabel()}尚未收录` : "没有找到匹配的图文";
+    els.emptyState.querySelector("h2").textContent = uncollected ? t("{type}尚未收录", { type: releaseLabel() }) : t("没有找到匹配的图文");
     els.emptyState.querySelector("p").hidden = uncollected;
   }
   renderCollectionFilter([...new Set(state.items.map((item) => item.collection || "未分类"))].sort());
@@ -505,6 +545,11 @@ function buildSummary() {
   const collectionLabel = els.collectionFilter ? (state.collection === "all" ? "全部合集" : state.collection) : "";
   const queryLabel = state.query ? `，关键词「${state.query}」` : "";
   const imageCount = state.filtered.reduce((total, group) => total + group.imageCount, 0);
+  if (english()) {
+    const scope = els.playerAlbum ? t(collectionLabel) : [els.releaseNav ? releaseLabel() : t(collectionLabel), state.year === "all" ? t("全部年份") : state.year, state.category === "all" ? "" : t(state.category)].filter(Boolean).join(" · ");
+    const query = state.query ? ` · “${state.query}”` : "";
+    return `${scope}${query} · ${state.filtered.length} works · ${imageCount} photos · Page ${state.page}/${totalPages()} · ${state.pageSize} per page`;
+  }
   if (els.playerAlbum) {
     return `${collectionLabel}${queryLabel}：找到 ${state.filtered.length} 组图文，${imageCount} 张图片。当前第 ${state.page}/${totalPages()} 页，每页 ${state.pageSize} 组。`;
   }
@@ -527,7 +572,7 @@ function renderDetailImage() {
   resetImageInspection();
   const item = state.activeGroup.items[state.activeImageIndex];
   els.detailImage.src = item.image;
-  els.detailImage.alt = state.activeGroup.title;
+  els.detailImage.alt = workCopy(state.activeGroup).title;
   els.carouselCount.textContent = `${state.activeImageIndex + 1} / ${state.activeGroup.imageCount}`;
   els.carouselControls.hidden = state.activeGroup.imageCount <= 1;
 }
@@ -540,12 +585,14 @@ function moveDetailImage(delta) {
 
 function renderDetailCaption(group) {
   const copy = workCopy(group);
-  const caption = copy.caption || (usesCaptionPlaceholder(group) ? "无文字说明" : "");
+  const caption = copy.caption || (usesCaptionPlaceholder(group) ? t("无文字说明") : "");
   const article = state.articles.get(group.articleId);
   const work = article?.works.find((candidate) => candidate.id === group.items[0].workId);
   const result = window.BelongsReading.format(caption, {
     id: group.items[0].workId || group.items[0].id,
-    theme: work ? article.theme?.text?.trim() : "",
+    language: english() ? "en" : "zh",
+    source: copy.sourceCaption,
+    theme: work ? articleTheme(article).trim() : "",
     trustedSpecs: Boolean(work),
   });
   els.detailCaption.innerHTML = result.html;
@@ -557,17 +604,7 @@ function openDetail(group) {
   state.activeGroup = group;
   state.activeImageIndex = 0;
   renderDetailImage();
-  els.detailTitle.innerHTML = window.BelongsReading.headingHtml(workCopy(group).title);
-  els.detailTitle.classList.toggle("reading-title--long", workCopy(group).title.length > 32);
-  if (els.playerAlbum) {
-    els.detailMeta.textContent = group.collection;
-    els.detailIndex.textContent = `第 ${String(group.index).padStart(2, "0")} 组 · ${group.imageCount} 张图片`;
-  } else {
-    els.detailMeta.textContent = `${groupDate(group, true)} · ${releaseLabel(group.releaseType)}`;
-    els.detailIndex.textContent = `${group.year} 第 ${String(group.index).padStart(3, "0")} 组 · ${group.imageCount} 张图片 · 全集 Item ${sourceRange(group)}`;
-    els.openArticle.hidden = !group.articleId;
-  }
-  renderDetailCaption(group);
+  renderDetailCopy(group);
   if (typeof els.dialog.showModal === "function") {
     els.dialog.showModal();
   } else {
@@ -575,30 +612,49 @@ function openDetail(group) {
   }
 }
 
+function renderDetailCopy(group) {
+  els.detailTitle.innerHTML = window.BelongsReading.headingHtml(workCopy(group).title);
+  els.detailTitle.classList.toggle("reading-title--long", workCopy(group).title.length > 32);
+  if (els.playerAlbum) {
+    els.detailMeta.textContent = t(group.collection);
+    els.detailIndex.textContent = t("第 {index} 组 · {images} 张图片", { index: String(group.index).padStart(2, "0"), images: group.imageCount });
+  } else {
+    els.detailMeta.textContent = `${groupDate(group, true)} · ${releaseLabel(group.releaseType)}`;
+    els.detailIndex.textContent = t("{year} 第 {index} 组 · {images} 张图片 · 全集 Item {range}", { year: group.year, index: String(group.index).padStart(3, "0"), images: group.imageCount, range: sourceRange(group) });
+    els.openArticle.hidden = !group.articleId;
+  }
+  renderDetailCaption(group);
+}
+
 function openArticle(articleId) {
   const article = state.articles.get(articleId);
   if (!article || !els.articleDialog) return;
-  els.articleDialogMeta.textContent = `${article.account} · ${article.date} · ${article.works.length} 件作品`;
+  state.activeArticleId = articleId;
+  renderArticle(article);
+  els.articleDialog.scrollTop = 0;
+  els.articleDialog.showModal();
+}
+
+function renderArticle(article) {
+  els.articleDialogMeta.textContent = `${article.account} · ${displayDate(article.date)} · ${t("{count} 件作品", { count: article.works.length })}`;
   els.articleBody.innerHTML = `
     <div class="article-work-grid">${article.works.map((work, index) => `
       <figure class="article-work">
         <div class="article-work-images">${work.images.map((image) => `
-          <img src="${escapeHtml(image.path)}" alt="${escapeHtml(work.title)}" width="${image.width}" height="${image.height}" />
+          <img src="${escapeHtml(image.path)}" alt="${escapeHtml(translatedWork(work, "title", work.title))}" width="${image.width}" height="${image.height}" />
         `).join("")}</div>
         <figcaption>
           <span class="article-work-number">${String(index + 1).padStart(2, "0")}</span>
-          <div><h3>${escapeHtml(work.title)}</h3><div class="reading-copy">${window.BelongsReading.format(work.description, { id: work.id, trustedSpecs: true }).html}</div></div>
+          <div><h3>${escapeHtml(translatedWork(work, "title", work.title))}</h3><div class="reading-copy">${window.BelongsReading.format(translatedWork(work, "description", work.description), { id: work.id, language: english() ? "en" : "zh", source: work.description, trustedSpecs: true }).html}</div></div>
         </figcaption>
       </figure>
     `).join("")}</div>
     ${article.theme ? `<footer class="article-theme">
-      <div><span>末尾主题描述</span><time class="article-theme-date">${escapeHtml(article.theme.date)}</time></div>
-      <blockquote class="article-theme-text">${escapeHtml(article.theme.text)}</blockquote>
-      <a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">查看公众号原文 ↗</a>
-    </footer>` : `<footer class="article-theme article-theme-source"><a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">查看公众号原文 ↗</a></footer>`}
+      <div><span>${t("末尾主题描述")}</span><time class="article-theme-date">${escapeHtml(displayDate(article.theme.date))}</time></div>
+      <blockquote class="article-theme-text">${escapeHtml(articleTheme(article))}</blockquote>
+      <a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">${t("查看公众号原文 ↗")}</a>
+    </footer>` : `<footer class="article-theme article-theme-source"><a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">${t("查看公众号原文 ↗")}</a></footer>`}
   `;
-  els.articleDialog.scrollTop = 0;
-  els.articleDialog.showModal();
 }
 
 function closeDetail() {
@@ -854,6 +910,8 @@ function bindEvents() {
 }
 
 async function init() {
+  // Source-checked content is translated here, not by the shared static-copy walker.
+  for (const node of [els.gallery, els.detailTitle, els.detailCaption, els.articleBody, els.discovery]) node?.setAttribute?.("data-i18n-content", "");
   bindEvents();
   let data = window.BELONGS_DATA;
   if (!data) {
@@ -886,8 +944,29 @@ async function init() {
   applyFilters();
 }
 
+window.addEventListener?.("belongs:language-change", () => {
+  if (!state.groups.length) return;
+  const scrollY = window.scrollY;
+  renderScopeFilters();
+  if (els.viewSwitch) setView(state.view);
+  applyFilters();
+  renderDiscovery(true);
+  if (state.activeGroup) {
+    const scroll = els.dialog.scrollTop;
+    renderDetailCopy(state.activeGroup);
+    els.detailImage.alt = workCopy(state.activeGroup).title;
+    els.dialog.scrollTop = scroll;
+  }
+  if (state.activeArticleId && els.articleDialog?.open) {
+    const scroll = els.articleDialog.scrollTop;
+    renderArticle(state.articles.get(state.activeArticleId));
+    els.articleDialog.scrollTop = scroll;
+  }
+  window.scrollTo(0, scrollY);
+});
+
 init().catch((error) => {
   console.error(error);
-  els.summaryText.textContent = "加载失败，请确认 data/items.json 存在。";
+  els.summaryText.textContent = t("加载失败，请确认 data/items.json 存在。");
   els.emptyState.hidden = false;
 });

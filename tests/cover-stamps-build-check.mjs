@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -52,12 +53,17 @@ try {
   assert.deepEqual(curated.items[0].coverStamps, ["gold"]);
   assert.equal(curated.items[1].coverStamps, undefined, "unmarked old data must stay unmarked");
   const uploaded = curated.items.filter((item) => item.workId === uploads[0].id);
+  const watermarkManifest = JSON.parse(await readFile(path.join(root, "data/image-watermarks.json"), "utf8").catch(() => '{"assets":[]}'));
   assert.equal(uploaded.length, 2);
   for (const [index, item] of uploaded.entries()) {
     assert.deepEqual(item.coverStamps, ["gold", "antique"], "dual stamps have a stable display order");
     assert.equal(item.coverStampPosition, "bottom-left");
     assert.equal(item.caption, "", "name-only works must not gain generated prose");
-    assert.ok((await readFile(path.join(site, item.image))).equals(await readFile(path.join(source, uploads[0].images[index].path))), "stamps must not be burned into photos");
+    const sourcePhoto = await readFile(path.join(source, uploads[0].images[index].path));
+    const watermark = watermarkManifest.assets.find((asset) => asset.path === item.image);
+    const expectedPhoto = watermark?.status === "added" ? await readFile(path.join(root, item.image)) : sourcePhoto;
+    assert.ok((await readFile(path.join(site, item.image))).equals(expectedPhoto), "cover stamp metadata must not alter the reviewed photo or its copyright watermark");
+    assert.equal(createHash("sha256").update(sourcePhoto).digest("hex"), uploads[0].images[index].sha256, "copyright watermarks must not modify canonical originals");
   }
   const before = await readFile(curatedFile, "utf8");
   assert.ok(!before.includes("Internal verification evidence"), "review notes must remain outside public payloads");

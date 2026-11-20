@@ -6,6 +6,27 @@ const copyStatus = document.querySelector("#copyStatus");
 
 const singleFields = ["称呼", "微信昵称", "微信号", "手机号", "VIP 等级", "预算区间", "款式描述", "其他备注"];
 const multiFields = ["配件类", "主件类", "其他方向", "主题元素"];
+let statusMessage = null;
+
+function t(source, vars = {}) {
+  return window.BelongsI18n?.t(source, vars)
+    ?? source.replace(/\{(\w+)\}/g, (match, name) => vars[name] ?? match);
+}
+
+function updateStatus() {
+  if (!statusMessage) {
+    copyStatus.textContent = "";
+    return;
+  }
+
+  const vars = typeof statusMessage.vars === "function" ? statusMessage.vars() : statusMessage.vars;
+  copyStatus.textContent = t(statusMessage.source, vars);
+}
+
+function setStatus(source, vars = {}) {
+  statusMessage = { source, vars };
+  updateStatus();
+}
 
 function fieldValue(name) {
   const field = form.elements[name];
@@ -24,20 +45,23 @@ function checkedValues(name) {
 }
 
 function line(label, value) {
-  return `${label}：${value || "未填写"}`;
+  const separator = window.BelongsI18n?.english() ? ": " : "：";
+  return `${t(label)}${separator}${value || t("未填写")}`;
 }
 
 function buildResult() {
-  const lines = ["BELONGS B&K VIP 定制意向登记", ""];
+  const lines = [t("BELONGS B&K VIP 定制意向登记"), ""];
 
   for (const name of singleFields) {
     if (name === "款式描述" || name === "其他备注") continue;
-    lines.push(line(name, fieldValue(name)));
+    const value = fieldValue(name);
+    lines.push(line(name, name === "VIP 等级" || name === "预算区间" ? t(value) : value));
   }
 
   lines.push("");
   for (const name of multiFields) {
-    lines.push(line(name, checkedValues(name).join("、")));
+    const separator = window.BelongsI18n?.english() ? ", " : "、";
+    lines.push(line(name, checkedValues(name).map((value) => t(value)).join(separator)));
   }
 
   lines.push("");
@@ -97,7 +121,12 @@ function enforceLimit(group, input) {
   group.classList.remove("is-limited");
   void group.offsetWidth;
   group.classList.add("is-limited");
-  copyStatus.textContent = `${group.querySelector("legend")?.textContent.trim() || "该项"}最多选择 ${max} 项`;
+  setStatus("{label}最多选择 {max} 项", () => ({
+    label: window.BelongsI18n?.english()
+      ? t(input.name || "该项")
+      : group.querySelector("legend")?.textContent.trim() || t("该项"),
+    max,
+  }));
 }
 
 async function copyResult() {
@@ -106,10 +135,10 @@ async function copyResult() {
 
   try {
     await navigator.clipboard.writeText(resultText.value);
-    copyStatus.textContent = "已复制登记内容";
+    setStatus("已复制登记内容");
   } catch {
     document.execCommand("copy");
-    copyStatus.textContent = "已复制登记内容";
+    setStatus("已复制登记内容");
   }
 
   window.getSelection()?.removeAllRanges();
@@ -119,11 +148,11 @@ async function exportImage() {
   updateResult();
 
   if (!window.html2canvas) {
-    copyStatus.textContent = "导出组件加载失败，请刷新页面后重试";
+    setStatus("导出组件加载失败，请刷新页面后重试");
     return;
   }
 
-  copyStatus.textContent = "正在生成图片...";
+  setStatus("正在生成图片...");
   copyButton.disabled = true;
   exportButton.disabled = true;
   const restoreFieldSnapshots = createFieldSnapshots();
@@ -147,10 +176,10 @@ async function exportImage() {
     document.body.append(link);
     link.click();
     link.remove();
-    copyStatus.textContent = "图片已生成并开始下载";
+    setStatus("图片已生成并开始下载");
   } catch (error) {
     console.error(error);
-    copyStatus.textContent = "图片生成失败，请稍后重试";
+    setStatus("图片生成失败，请稍后重试");
   } finally {
     document.body.classList.remove("is-exporting");
     restoreFieldSnapshots();
@@ -172,12 +201,18 @@ form.addEventListener("input", updateResult);
 
 form.addEventListener("reset", () => {
   window.setTimeout(() => {
-    copyStatus.textContent = "";
+    statusMessage = null;
+    updateStatus();
     updateResult();
   }, 0);
 });
 
 copyButton.addEventListener("click", copyResult);
 exportButton.addEventListener("click", exportImage);
+
+window.addEventListener("belongs:language-change", () => {
+  updateResult();
+  updateStatus();
+});
 
 updateResult();
