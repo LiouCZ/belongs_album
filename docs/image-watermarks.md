@@ -22,6 +22,8 @@ node scripts/image-watermarks.mjs --audit ../.album_backups/watermark-audit.json
 
 识别只提供初判。目视检查所有 `review` 和准备 `add` 的图片，尤其是浅色、被裁切的文字水印，以及位于外框内部的圆形版权印记；不要把作品表面的金属刻字当成照片水印。将结果保存为审校后的清单：已有印记用 `existing`，确实无印记用 `add`。同画幅缩略图需同步判断，裁切封面需单独核对。
 
+从源照片新生成的缩略图不包含后来加到公开大图上的水印。审校脚本会单独识别这类缩略图，而非继承大图的 `added` 状态；已完成的缩略图仍按文件哈希复用，避免重复加印。
+
 ```sh
 node scripts/image-watermarks.mjs --apply ../.album_backups/watermark-audit.json ../.album_backups/watermark-originals
 node scripts/image-watermarks.mjs --check

@@ -45,7 +45,7 @@ async function run() {
     await home.locator("#viewSwitch [data-view='list']").click();
     assert.equal(new URL(home.url()).searchParams.get("view"), "list");
     assert.equal(await home.locator("#viewSwitch [data-view='list']").getAttribute("aria-pressed"), "true");
-    assert.equal(await home.locator(".gallery .card-list").count(), 20);
+    assert.equal(await home.locator(".gallery .card-list").count(), 10);
     assert.equal(await home.locator("#searchInput").evaluate((node) => getComputedStyle(node).backgroundColor),
       "rgb(244, 241, 234)", "directory controls should keep the same paper background");
     assert.equal(await home.locator(".gallery .card-list").first().evaluate((card) =>
@@ -61,7 +61,7 @@ async function run() {
     assert.ok(await home.locator(".gallery .card-list").count() > 0);
     await home.reload();
     assert.equal(await home.locator("#introDialog").isVisible(), false);
-    assert.equal(await home.locator(".gallery .card-list").count(), 20);
+    assert.equal(await home.locator(".gallery .card-list").count(), 10);
 
     await yearSelect.selectOption("2021");
     await home.locator("#pageSizeSelect").selectOption("25");
@@ -106,7 +106,7 @@ async function run() {
       assert.equal(await page.evaluate(() => state.filtered.length > 0 && state.filtered.every((group) => group.years.includes("2026"))), true);
       await year.selectOption("all");
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-      assert.equal(await page.locator(".gallery .card-list").count(), 20);
+      assert.equal(await page.locator(".gallery .card-list").count(), width <= 680 ? 5 : 10);
       if (width <= 390) {
         const firstImage = await page.locator(".gallery img").first().boundingBox();
         const album = await page.locator("#albumMain").boundingBox();

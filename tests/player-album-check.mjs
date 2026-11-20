@@ -75,7 +75,7 @@ async function assertPlayerAlbumRendersWingGallery(browser) {
   assert.match(await page.locator("#summaryText").textContent(), /找到 30 组图文，39 张图片/);
   assert.doesNotMatch(await page.locator("#summaryText").textContent(), /未标注/);
   assert.equal(await page.locator("#emptyState").isHidden(), true);
-  assert.equal(await page.locator(".player-card").count(), 20);
+  assert.equal(await page.locator(".player-card").count(), 10);
   assert.equal(await page.locator(".player-card .excerpt").count(), 0);
   assert.equal(await page.locator(".player-card").first().evaluate((card) =>
     getComputedStyle(card).borderRadius), "8px", "player cards should have soft corners");

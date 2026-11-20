@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { applyWatermarkPlan, checkWatermarks, preserveReviewedWatermarks } from "../scripts/image-watermarks.mjs";
+import { applyWatermarkPlan, auditWatermarks, checkWatermarks, preserveReviewedWatermarks } from "../scripts/image-watermarks.mjs";
 
 const require = process.env.BELONGS_IMAGE_MODULE_DIR ? createRequire(path.join(process.env.BELONGS_IMAGE_MODULE_DIR, "package.json")) : createRequire(import.meta.url);
 const sharp = require("sharp");
@@ -33,6 +33,25 @@ try {
   assert.equal(await checkWatermarks({ site }), 2);
   assert.equal(await applyWatermarkPlan({ site, backup, plan: manifest }), 0, "Repeated runs cannot double-watermark");
   assert.deepEqual(await readFile(path.join(site, assets[0].path)), watermarked);
+
+  // A fresh thumbnail comes from canonical bytes, not the already-watermarked public master.
+  const thumb = "assets/thumbs/new.jpg";
+  const thumbBytes = await sharp(original).resize(240, 160).jpeg().toBuffer();
+  const dataBefore = await readFile(path.join(site, "data/items.js"));
+  await mkdir(path.join(site, "assets/thumbs"), { recursive: true });
+  await writeFile(path.join(site, thumb), thumbBytes);
+  await writeFile(path.join(site, "data/items.js"), `window.BELONGS_DATA=${JSON.stringify({ items: [
+    { image: assets[0].path, largeWidth: 480, largeHeight: 320, thumb, thumbWidth: 240, thumbHeight: 160 },
+    { image: assets[1].path, largeWidth: 480, largeHeight: 320 },
+  ] })}`);
+  const audit = await auditWatermarks({ site, output: path.join(temp, "audit.json") });
+  assert.equal(audit.assets.find((asset) => asset.path === thumb).status, "add", "new thumbnail must not inherit master's final added state");
+  assert.equal(await applyWatermarkPlan({ site, backup, plan: audit }), 1);
+  assert.equal(await checkWatermarks({ site }), 3);
+  const reviewed = JSON.parse(await readFile(path.join(site, "data/image-watermarks.json"), "utf8"));
+  assert.equal(await applyWatermarkPlan({ site, backup, plan: reviewed }), 0);
+  await writeFile(path.join(site, "data/items.js"), dataBefore);
+  await writeFile(path.join(site, "data/image-watermarks.json"), JSON.stringify(manifest));
 
   const cold = path.join(temp, "cold");
   await mkdir(path.join(cold, "assets/images"), { recursive: true });

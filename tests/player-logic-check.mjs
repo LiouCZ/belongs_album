@@ -41,7 +41,7 @@ assert.equal(node("collectionCount").textContent, "30 组作品 · 39 张图片"
 assert.equal((node("collectionFilter").innerHTML.match(/data-collection=/g) || []).length, 1);
 assert.match(node("collectionFilter").innerHTML, /aria-pressed="true"/);
 assert.doesNotMatch(node("summaryText").textContent, /未标注/);
-assert.equal((node("gallery").innerHTML.match(/class="card player-card"/g) || []).length, 20);
+assert.equal((node("gallery").innerHTML.match(/class="card player-card"/g) || []).length, 10);
 assert.doesNotMatch(node("gallery").innerHTML, /无文字说明|class="excerpt"/);
 
 node("searchInput").handlers.input({ target: { value: "羽翼 #21" } });

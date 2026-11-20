@@ -34,6 +34,8 @@ async function checkPage(browser, file, width, view = "grid") {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`file://${path.join(root, file)}${view === "list" ? "?view=list" : ""}`);
   if (file === "index.html") await page.locator("#closeIntro").click();
+  assert.equal(await page.locator("#gallery .card").count(), width <= 680 ? 5 : 10);
+  assert.equal(await page.locator("#pageSizeSelect").inputValue(), width <= 680 ? "5" : "10");
 
   assert.equal(await page.locator("#firstPage").isDisabled(), true);
   assert.equal(await page.locator("#prevPage").isDisabled(), true);

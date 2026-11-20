@@ -29,6 +29,7 @@ async function run() {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       await page.goto(`file://${path.join(root, "index.html")}`);
       await page.locator("#closeIntro").click();
+      await page.locator("#pageSizeSelect").selectOption("100");
       for (const [slug, date, theme, workCount] of sourceArticles) {
         const article = JSON.parse(readFileSync(path.resolve(root, `../album_source/articles/${slug}.json`), "utf8"));
         assert.equal(article.theme.date, date);
@@ -61,6 +62,10 @@ async function run() {
         assert.equal(await page.locator("#articleDialog").isVisible(), true);
         assert.equal(await page.locator("#articleDialog .article-work").count(), workCount);
         assert.equal(await page.locator("#articleDialog .article-work img").count(), workCount);
+        for (const image of await page.locator("#articleDialog .article-work img").all()) {
+          assert.equal(await image.getAttribute("loading"), "lazy");
+          await image.scrollIntoViewIfNeeded();
+        }
         await page.waitForFunction(() => [...document.querySelectorAll("#articleDialog .article-work img")].every((image) => image.complete && image.naturalWidth > 0));
         assert.equal(await page.locator("#articleDialog .article-theme-text").textContent(), theme);
         assert.match(await page.locator("#articleDialog .article-theme-date").textContent(), new RegExp(displayDate));

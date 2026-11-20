@@ -1,3 +1,17 @@
+const pageSizeStorageKey = "belongs:page-size";
+
+function validPageSize(size) {
+  return size === 5 || size === 10 || (Number.isInteger(size) && size >= 20 && size <= 100 && size % 5 === 0);
+}
+
+function initialPageSize() {
+  try {
+    const saved = Number(window.localStorage.getItem(pageSizeStorageKey));
+    if (validPageSize(saved)) return saved;
+  } catch {}
+  return window.matchMedia?.("(max-width: 680px)").matches ? 5 : 10;
+}
+
 const state = {
   items: [],
   groups: [],
@@ -9,7 +23,7 @@ const state = {
   releaseType: "regular",
   year: "all",
   page: 1,
-  pageSize: 20,
+  pageSize: initialPageSize(),
   activeGroup: null,
   activeImageIndex: 0,
   activeArticleId: null,
@@ -635,13 +649,36 @@ function openArticle(articleId) {
   els.articleDialog.showModal();
 }
 
+let articleImageObserver = null;
+
+function observeArticleImages() {
+  articleImageObserver?.disconnect();
+  const images = els.articleBody.querySelectorAll("img[data-src]");
+  const load = (image) => {
+    image.src = image.dataset.src;
+    image.removeAttribute("data-src");
+  };
+  if (typeof window.IntersectionObserver !== "function") {
+    images.forEach(load);
+    return;
+  }
+  articleImageObserver = new window.IntersectionObserver((entries) => {
+    for (const { target, isIntersecting } of entries) {
+      if (!isIntersecting) continue;
+      load(target);
+      articleImageObserver.unobserve(target);
+    }
+  }, { root: els.articleDialog, rootMargin: "240px 0px" });
+  images.forEach((image) => articleImageObserver.observe(image));
+}
+
 function renderArticle(article) {
   els.articleDialogMeta.textContent = `${article.account} · ${displayDate(article.date)} · ${t("{count} 件作品", { count: article.works.length })}`;
   els.articleBody.innerHTML = `
     <div class="article-work-grid">${article.works.map((work, index) => `
       <figure class="article-work">
         <div class="article-work-images">${work.images.map((image) => `
-          <img src="${escapeHtml(image.path)}" alt="${escapeHtml(translatedWork(work, "title", work.title))}" width="${image.width}" height="${image.height}" />
+          <img data-src="${escapeHtml(image.path)}" alt="${escapeHtml(translatedWork(work, "title", work.title))}" loading="lazy" decoding="async" width="${image.width}" height="${image.height}" />
         `).join("")}</div>
         <figcaption>
           <span class="article-work-number">${String(index + 1).padStart(2, "0")}</span>
@@ -655,6 +692,7 @@ function renderArticle(article) {
       <a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">${t("查看公众号原文 ↗")}</a>
     </footer>` : `<footer class="article-theme article-theme-source"><a href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noopener noreferrer">${t("查看公众号原文 ↗")}</a></footer>`}
   `;
+  observeArticleImages();
 }
 
 function closeDetail() {
@@ -829,7 +867,13 @@ function bindEvents() {
   });
 
   els.pageSizeSelect.addEventListener("change", (event) => {
-    state.pageSize = Number(event.target.value) || 20;
+    const size = Number(event.target.value);
+    if (!validPageSize(size)) {
+      els.pageSizeSelect.value = String(state.pageSize);
+      return;
+    }
+    state.pageSize = size;
+    try { window.localStorage.setItem(pageSizeStorageKey, String(size)); } catch {}
     state.page = 1;
     applyFilters();
   });
@@ -900,6 +944,10 @@ function bindEvents() {
       openArticle(articleId);
     });
     els.closeArticle.addEventListener("click", () => els.articleDialog.close());
+    els.articleDialog.addEventListener("close", () => {
+      articleImageObserver?.disconnect();
+      state.activeArticleId = null;
+    });
     els.articleDialog.addEventListener("click", (event) => {
       if (event.target === els.articleDialog) els.articleDialog.close();
     });
@@ -910,6 +958,7 @@ function bindEvents() {
 }
 
 async function init() {
+  els.pageSizeSelect.value = String(state.pageSize);
   // Source-checked content is translated here, not by the shared static-copy walker.
   for (const node of [els.gallery, els.detailTitle, els.detailCaption, els.articleBody, els.discovery]) node?.setAttribute?.("data-i18n-content", "");
   bindEvents();

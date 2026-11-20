@@ -35,6 +35,41 @@ try {
   const curated = JSON.parse(readFileSync(path.join(output, "data/curated-official.json"), "utf8"));
   assert.deepEqual(curated.articles, JSON.parse(readFileSync(path.join(root, "data/curated-official.json"), "utf8")).articles);
   assert.equal(curated.items.filter((item) => item.articleId).length, 54);
+  const before = new Map(JSON.parse(readFileSync(path.join(root, "data/curated-official.json"), "utf8")).items.map((item) => [item.id, item]));
+  const canonical = new Map();
+  const canonicalImageIds = [];
+  for (const file of readdirSync(path.join(source, "articles")).filter((name) => name.endsWith(".json")).sort()) {
+    const article = JSON.parse(readFileSync(path.join(source, "articles", file), "utf8"));
+    if (article.captureStatus !== "complete") continue;
+    const entries = new Map(JSON.parse(readFileSync(path.join(source, "entries", file), "utf8")).map((entry) => [entry.id, entry]));
+    for (const id of article.workIds) {
+      const entry = entries.get(id);
+      canonical.set(id, { article, entry });
+      entry.images.forEach((image, index) => canonicalImageIds.push(`${id}:${index + 1}`));
+    }
+  }
+  assert.deepEqual(curated.items.filter((item) => item.articleId).map((item) => item.id), canonicalImageIds, "all canonical images retain source order");
+  let fullBytes = 0;
+  let thumbBytes = 0;
+  for (const item of curated.items.filter((item) => item.articleId)) {
+    const { article, entry } = canonical.get(item.workId);
+    assert.equal(item.title, entry.title, "work title must match canonical content, not just another export");
+    assert.equal(item.caption, [entry.description.trim(), article.theme?.text?.trim()].filter(Boolean).join("\n\n"));
+    const [year, month, day] = article.publishedDate.split("-").map(Number);
+    assert.equal(item.date, `${year}年${month}月${day}日`);
+    assert.equal(item.year, String(year));
+    assert.equal(item.sourceIndex, migrated.items.length + canonicalImageIds.indexOf(item.id) + 1);
+    assert.notEqual(item.thumb, item.image, "WeChat covers must use separate lightweight thumbnails");
+    assert.ok(item.thumbWidth <= 640 && item.thumbHeight <= 640);
+    assert.ok(Math.abs(item.thumbWidth / item.thumbHeight - item.largeWidth / item.largeHeight) < 0.005, "no thumbnail cropping");
+    const { thumb, thumbWidth, thumbHeight, ...unchanged } = item;
+    const { thumb: oldThumb, thumbWidth: oldWidth, thumbHeight: oldHeight, ...old } = before.get(item.id);
+    assert.deepEqual(unchanged, old, "titles, captions, dates, order and full-size image metadata must stay unchanged");
+    assert.equal(hash(path.join(output, item.image)), hash(path.join(root, item.image)), "HD public bytes must stay unchanged");
+    fullBytes += readFileSync(path.join(output, item.image)).length;
+    thumbBytes += readFileSync(path.join(output, item.thumb)).length;
+  }
+  assert.ok(thumbBytes < fullBytes * 0.4, "thumbnail transfer should be substantially smaller than HD photos");
   const uploaded = readdirSync(path.join(source, "entries")).filter((name) => name.startsWith("upload-") && name.endsWith(".json"))
     .flatMap((name) => JSON.parse(readFileSync(path.join(source, "entries", name), "utf8")));
   assert.equal(curated.items.filter((item) => !item.articleId).length, uploaded.reduce((count, entry) => count + entry.images.length, 0));
@@ -43,9 +78,11 @@ try {
   assert.equal(context.window.BELONGS_DATA.items.length, backup.items.length);
   const once = hash(path.join(output, "data/items.json"));
   const curatedOnce = hash(path.join(output, "data/curated-official.json"));
+  const thumbsOnce = curated.items.filter((item) => item.articleId).map((item) => hash(path.join(output, item.thumb)));
   build();
   assert.equal(hash(path.join(output, "data/items.json")), once, "rebuilding should be deterministic");
   assert.equal(hash(path.join(output, "data/curated-official.json")), curatedOnce);
+  assert.deepEqual(curated.items.filter((item) => item.articleId).map((item) => hash(path.join(output, item.thumb))), thumbsOnce, "thumbnail bytes should be deterministic");
 
   const records = readdirSync(path.join(source, "entries")).filter((file) => file.startsWith("legacy-") && file.endsWith(".json"))
     .flatMap((file) => JSON.parse(readFileSync(path.join(source, "entries", file), "utf8")));

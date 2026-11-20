@@ -1,10 +1,19 @@
 import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
 import { copyFile, mkdir, readFile, readdir, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { coverStampMetadata } from "./cover-stamps.mjs";
 
 const defaultSite = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function thumbnailLibrary() {
+  const require = createRequire(import.meta.url);
+  try { return require("sharp"); } catch (error) {
+    if (!process.env.BELONGS_IMAGE_MODULE_DIR) throw new Error("Sharp is required for article thumbnails; set BELONGS_IMAGE_MODULE_DIR to the installed image-library directory", { cause: error });
+    return createRequire(path.join(process.env.BELONGS_IMAGE_MODULE_DIR, "package.json"))("sharp");
+  }
+}
 
 function displayDate(date) {
   const [year, month, day] = date.split("-").map(Number);
@@ -44,6 +53,7 @@ export async function buildCuratedOfficial({ site = defaultSite, source = path.r
   const items = [];
   const workIds = new Set(legacy.items.map((item) => item.workId));
   const names = (await readdir(path.join(source, "articles"))).filter((name) => name.endsWith(".json")).sort();
+  let sharp;
   for (const name of names) {
     const article = JSON.parse(await readFile(path.join(source, "articles", name), "utf8"));
     if (article.captureStatus !== "complete") continue;
@@ -82,6 +92,12 @@ export async function buildCuratedOfficial({ site = defaultSite, source = path.r
         const output = path.join(site, relative);
         await mkdir(path.dirname(output), { recursive: true });
         await copyFile(input, output);
+        sharp ??= thumbnailLibrary();
+        const thumb = `assets/official-articles/${slug}/thumbs/${entry.source.position}-${imageIndex + 1}-${path.parse(image.path).name}.jpg`;
+        const thumbnail = await sharp(bytes).resize({ width: 640, height: 640, fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 80, mozjpeg: true }).toBuffer({ resolveWithObject: true });
+        await mkdir(path.dirname(path.join(site, thumb)), { recursive: true });
+        await writeFile(path.join(site, thumb), thumbnail.data);
         images.push({ path: relative, width: image.width, height: image.height });
 
         sourceIndex += 1;
@@ -96,13 +112,13 @@ export async function buildCuratedOfficial({ site = defaultSite, source = path.r
           title: entry.title,
           caption: [entry.description.trim(), article.theme?.text?.trim()].filter(Boolean).join("\n\n"),
           image: relative,
-          thumb: relative,
+          thumb,
           width: image.width,
           height: image.height,
           largeWidth: image.width,
           largeHeight: image.height,
-          thumbWidth: image.width,
-          thumbHeight: image.height,
+          thumbWidth: thumbnail.info.width,
+          thumbHeight: thumbnail.info.height,
           articleId: article.id,
           workId: entry.id,
           ...release,

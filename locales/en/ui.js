@@ -46,5 +46,5 @@
     "等待": "Waiting", "见微知著": "The Whole in the Small", "光之翼": "Wings of Light", "持续创作": "Keep Creating",
     "全金作品": "Solid Gold", "古董改造": "Antique Rework", "制作类型": "Making", "元素": "Elements", "搭配": "Pairing", "规格": "Specifications", "材质": "Materials", "尺寸": "Size", "重量": "Weight",
   });
-  for (let count = 20; count <= 100; count += 5) en.text[`${count} 组`] = String(count);
+  for (const count of [5, 10, ...Array.from({ length: 17 }, (_, index) => 20 + index * 5)]) en.text[`${count} 组`] = String(count);
 })();

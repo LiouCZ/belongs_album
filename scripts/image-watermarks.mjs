@@ -206,6 +206,8 @@ export async function auditWatermarks({ site = root, output } = {}) {
     records.set(asset.path, old?.publicSha256 === digest ? { ...asset, ...old } : { ...asset, sourceSha256: digest });
   }
   const inputs = assets.filter((asset) => !records.get(asset.path).status && (asset.path === asset.master
+    // New canonical thumbnails do not contain the watermark added to a public master.
+    || records.get(asset.master).status === "added"
     || Math.abs(asset.width / asset.height - records.get(asset.master).width / records.get(asset.master).height) > 0.02))
     .map((asset) => ({ path: asset.path, file: path.join(site, asset.path) }));
   if (inputs.length && process.platform !== "darwin") throw new Error("The local watermark audit uses macOS Vision; audit on a Mac before applying the reviewed manifest.");
